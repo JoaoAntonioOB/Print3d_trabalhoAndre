@@ -1,0 +1,16 @@
+# Perfil de teste: o DataSource vem do Testcontainers (@ServiceConnection);
+# uploads vão para target/ (limpo pelo mvn clean) e o log fica mais quieto.
+application:
+  storage:
+    upload-dir: target/test-uploads
+  # Limites folgados para a suíte (muitos logins do mesmo IP do MockMvc);
+  # o teste específico de 429 baixa o limite via @TestPropertySource.
+  rate-limit:
+    limite-auth: 1000
+    limite-public: 1000
+
+logging:
+  level:
+    com.print3dmanager.erp: INFO
+    org.hibernate.SQL: WARN
+    org.springframework.security: WARN

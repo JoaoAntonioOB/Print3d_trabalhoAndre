@@ -1,0 +1,818 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import AddIcon from '@mui/icons-material/Add';
+import CancelIcon from '@mui/icons-material/Cancel';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import DeleteIcon from '@mui/icons-material/Delete';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import PrintIcon from '@mui/icons-material/Print';
+import ReportProblemIcon from '@mui/icons-material/ReportProblem';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import {
+  Autocomplete,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  IconButton,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
+import { z } from 'zod';
+import { mensagemDeErro } from '../../api/client';
+import { clientsApi, type Cliente } from '../../api/clients';
+import { filamentsApi } from '../../api/filaments';
+import {
+  nomeDoArquivoModelo,
+  ordersApi,
+  type ItemPedido,
+  type Pedido,
+  type PedidoInput,
+} from '../../api/orders';
+import {
+  CORES_STATUS_IMPRESSAO,
+  printsApi,
+  ROTULOS_STATUS_IMPRESSAO,
+  type Impressao,
+} from '../../api/prints';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
+import {
+  decimalOpcional,
+  inteiroOpcional,
+  paraCampo,
+  paraNumero,
+  paraTexto,
+} from '../../lib/form';
+import { PrintFinishDialog, type ModoFinalizacao } from '../prints/PrintFinishDialog';
+import { PrintStartDialog } from '../prints/PrintStartDialog';
+
+const esquemaItem = z.object({
+  id: z.number().nullable(),
+  filamentoId: z.string(),
+  nomePeca: z.string().trim().min(1, 'Informe a peça.').max(160, 'Máximo de 160 caracteres.'),
+  descricao: z.string(),
+  quantidade: inteiroOpcional(),
+  pesoEstimadoG: decimalOpcional(),
+  tempoImpressaoMinutos: inteiroOpcional(),
+  precoUnitario: decimalOpcional(),
+});
+
+const esquemaPedido = z.object({
+  clienteId: z
+    .union([z.number(), z.null()])
+    .refine((valor) => valor !== null, 'Selecione o cliente.'),
+  dataEntregaPrevista: z.string(),
+  desconto: decimalOpcional(),
+  observacoes: z.string(),
+  itens: z.array(esquemaItem).min(1, 'O pedido deve ter pelo menos um item.'),
+});
+
+// Input: o que o formulário edita (clienteId pode ser null antes da validação);
+// Output: o que sai do zod após o refine (clienteId garantidamente number).
+type DadosFormulario = z.input<typeof esquemaPedido>;
+type DadosValidados = z.output<typeof esquemaPedido>;
+type ItemFormulario = z.input<typeof esquemaItem>;
+
+const ITEM_VAZIO: ItemFormulario = {
+  id: null,
+  filamentoId: '',
+  nomePeca: '',
+  descricao: '',
+  quantidade: '1',
+  pesoEstimadoG: '',
+  tempoImpressaoMinutos: '',
+  precoUnitario: '',
+};
+
+const FORMULARIO_VAZIO: DadosFormulario = {
+  clienteId: null,
+  dataEntregaPrevista: '',
+  desconto: '',
+  observacoes: '',
+  itens: [ITEM_VAZIO],
+};
+
+function paraFormulario(pedido: Pedido): DadosFormulario {
+  return {
+    clienteId: pedido.clienteId,
+    dataEntregaPrevista: pedido.dataEntregaPrevista ?? '',
+    desconto: paraCampo(pedido.desconto),
+    observacoes: pedido.observacoes ?? '',
+    itens: pedido.itens.map((item) => ({
+      id: item.id,
+      // != null: o backend omite campos nulos do JSON (non_null).
+      filamentoId: item.filamentoId != null ? String(item.filamentoId) : '',
+      nomePeca: item.nomePeca,
+      descricao: item.descricao ?? '',
+      quantidade: String(item.quantidade),
+      pesoEstimadoG: paraCampo(item.pesoEstimadoG),
+      tempoImpressaoMinutos: paraCampo(item.tempoImpressaoMinutos),
+      precoUnitario: paraCampo(item.precoUnitario),
+    })),
+  };
+}
+
+function paraPayload(dados: DadosValidados): PedidoInput {
+  return {
+    clienteId: dados.clienteId,
+    dataEntregaPrevista: paraTexto(dados.dataEntregaPrevista),
+    desconto: paraNumero(dados.desconto),
+    observacoes: paraTexto(dados.observacoes),
+    itens: dados.itens.map((item) => ({
+      id: item.id,
+      filamentoId: item.filamentoId === '' ? null : Number(item.filamentoId),
+      nomePeca: item.nomePeca.trim(),
+      descricao: paraTexto(item.descricao),
+      quantidade: paraNumero(item.quantidade),
+      pesoEstimadoG: paraNumero(item.pesoEstimadoG),
+      tempoImpressaoMinutos: paraNumero(item.tempoImpressaoMinutos),
+      precoUnitario: paraNumero(item.precoUnitario),
+    })),
+  };
+}
+
+const moeda = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+interface OrderFormDialogProps {
+  aberto: boolean;
+  /** Id do pedido em edição/visualização; null = novo pedido. */
+  pedidoId: number | null;
+  onFechar: () => void;
+}
+
+export function OrderFormDialog({ aberto, pedidoId, onFechar }: OrderFormDialogProps) {
+  const queryClient = useQueryClient();
+  const [buscaCliente, setBuscaCliente] = useState('');
+  // Objeto do Autocomplete em estado próprio: derivá-lo da query faz o value
+  // oscilar para null durante o refetch e o MUI entra em loop de re-render.
+  const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null);
+  // Arquivo de modelo por id de item, fora do react-hook-form: invalidar a
+  // query do pedido para refletir o anexo dispararia o reset() e descartaria
+  // edições não salvas dos demais campos.
+  const [arquivos, setArquivos] = useState<Record<number, string | undefined>>({});
+  // Última sugestão de preço aplicada por índice de linha — evita sobrescrever
+  // um valor que o usuário tenha digitado manualmente por cima da sugestão.
+  const [precosSugeridos, setPrecosSugeridos] = useState<Record<number, string>>({});
+  // Token da última chamada de sugestão disparada por linha (peso e tempo
+  // disparam chamadas em sequência rápida) — descarta respostas que cheguem
+  // fora de ordem, senão uma resposta antiga (calculada sem o tempo, por
+  // exemplo) pode sobrescrever o resultado mais recente e correto.
+  const requisicaoPrecoRef = useRef<Record<number, number>>({});
+  const proximaRequisicaoRef = useRef(0);
+
+  // Fluxo Pedido → Impressão (só quando pedido.status === 'EM_PRODUCAO').
+  const [itemParaIniciar, setItemParaIniciar] = useState<ItemPedido | null>(null);
+  const [finalizacao, setFinalizacao] = useState<{
+    impressao: Impressao;
+    modo: ModoFinalizacao;
+  } | null>(null);
+  const [impressaoParaCancelar, setImpressaoParaCancelar] = useState<Impressao | null>(null);
+
+  const { data: pedido, isPending: carregandoPedido } = useQuery({
+    queryKey: ['orders', 'detalhe', pedidoId],
+    queryFn: () => ordersApi.buscarPorId(pedidoId!),
+    enabled: aberto && pedidoId !== null,
+  });
+
+  // Só PENDENTE pode ser editado — nos demais status o diálogo é leitura.
+  const somenteLeitura = pedidoId !== null && pedido !== undefined && pedido.status !== 'PENDENTE';
+  const carregando = pedidoId !== null && carregandoPedido;
+
+  const { data: clientes } = useQuery({
+    queryKey: ['clients', 'select', buscaCliente],
+    queryFn: () =>
+      clientsApi.listar({ busca: buscaCliente, ativo: true, page: 0, size: 20 }),
+    enabled: aberto,
+    placeholderData: (anterior) => anterior,
+  });
+
+  const { data: filamentos } = useQuery({
+    queryKey: ['filaments', 'select'],
+    queryFn: () => filamentsApi.listar({ ativo: true, page: 0, size: 100 }),
+    enabled: aberto,
+  });
+
+  const { data: impressoesAtivas } = useQuery({
+    queryKey: ['prints', 'ativas-pedido', pedidoId],
+    queryFn: () => printsApi.listar({ status: 'EM_ANDAMENTO', page: 0, size: 100 }),
+    enabled: aberto && pedido?.status === 'EM_PRODUCAO',
+  });
+
+  const idsItensPedido = pedido?.itens.map((item) => item.id) ?? [];
+  const impressaoPorItem = new Map<number, Impressao>(
+    (impressoesAtivas?.content ?? [])
+      .filter(
+        (impressao): impressao is Impressao & { itemPedidoId: number } =>
+          impressao.itemPedidoId !== null && idsItensPedido.includes(impressao.itemPedidoId),
+      )
+      .map((impressao) => [impressao.itemPedidoId, impressao]),
+  );
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    watch,
+    setValue,
+    getValues,
+    formState: { errors },
+  } = useForm<DadosFormulario, unknown, DadosValidados>({
+    resolver: zodResolver(esquemaPedido),
+    defaultValues: FORMULARIO_VAZIO,
+  });
+  const { fields, append, remove } = useFieldArray({ control, name: 'itens' });
+
+  useEffect(() => {
+    if (aberto) {
+      const edicao = pedido && pedidoId !== null;
+      reset(edicao ? paraFormulario(pedido) : FORMULARIO_VAZIO);
+      setClienteSelecionado(
+        edicao ? ({ id: pedido.clienteId, nome: pedido.clienteNome } as Cliente) : null,
+      );
+      setArquivos(
+        edicao
+          ? Object.fromEntries(
+              pedido.itens.map((item) => [item.id, item.arquivoModelo ?? undefined]),
+            )
+          : {},
+      );
+    }
+  }, [aberto, pedido, pedidoId, reset]);
+
+  const salvar = useMutation({
+    mutationFn: (dados: DadosValidados) =>
+      pedidoId !== null
+        ? ordersApi.atualizar(pedidoId, paraPayload(dados))
+        : ordersApi.criar(paraPayload(dados)),
+    onSuccess: (salvo) => {
+      toast.success(
+        pedidoId !== null ? 'Pedido atualizado.' : `Pedido ${salvo.numero} criado.`,
+      );
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      onFechar();
+    },
+    onError: (erro) => toast.error(mensagemDeErro(erro)),
+  });
+
+  const anexarArquivo = useMutation({
+    mutationFn: ({ itemId, arquivo }: { itemId: number; arquivo: File }) =>
+      ordersApi.anexarArquivoItem(pedidoId!, itemId, arquivo),
+    onSuccess: (item) => {
+      toast.success('Modelo 3D anexado.');
+      setArquivos((atual) => ({ ...atual, [item.id]: item.arquivoModelo ?? undefined }));
+    },
+    onError: (erro) => toast.error(mensagemDeErro(erro)),
+  });
+
+  const removerArquivo = useMutation({
+    mutationFn: (itemId: number) => ordersApi.removerArquivoItem(pedidoId!, itemId),
+    onSuccess: (_, itemId) => {
+      toast.success('Modelo 3D removido.');
+      setArquivos((atual) => ({ ...atual, [itemId]: undefined }));
+    },
+    onError: (erro) => toast.error(mensagemDeErro(erro)),
+  });
+
+  const cancelarImpressao = useMutation({
+    mutationFn: (id: number) => printsApi.cancelar(id),
+    onSuccess: () => {
+      toast.success('Impressão cancelada. A impressora foi liberada.');
+      queryClient.invalidateQueries({ queryKey: ['prints'] });
+      queryClient.invalidateQueries({ queryKey: ['printers'] });
+      setImpressaoParaCancelar(null);
+    },
+    onError: (erro) => {
+      toast.error(mensagemDeErro(erro));
+      setImpressaoParaCancelar(null);
+    },
+  });
+
+  // Sugestão silenciosa de preço unitário (mesma engine dos Orçamentos) — sem
+  // toast de sucesso/erro, é só um preenchimento automático de conveniência.
+  const precificarItem = useMutation({
+    mutationFn: ordersApi.precificarItem,
+  });
+
+  function sugerirPreco(indice: number) {
+    const item = itens[indice];
+    if (!item) {
+      return;
+    }
+    const filamentoId = item.filamentoId === '' ? null : Number(item.filamentoId);
+    const pesoEstimadoG = paraNumero(item.pesoEstimadoG || '');
+    const tempoImpressaoMinutos = paraNumero(item.tempoImpressaoMinutos || '');
+    if (filamentoId === null && pesoEstimadoG === null && tempoImpressaoMinutos === null) {
+      return;
+    }
+    const requisicao = ++proximaRequisicaoRef.current;
+    requisicaoPrecoRef.current[indice] = requisicao;
+    precificarItem.mutate(
+      { filamentoId, pesoEstimadoG, tempoImpressaoMinutos },
+      {
+        onSuccess: (resultado) => {
+          // Resposta fora de ordem (uma chamada mais recente para esta linha
+          // já foi disparada) — descarta, senão um valor desatualizado pode
+          // sobrescrever o resultado correto que já chegou.
+          if (requisicaoPrecoRef.current[indice] !== requisicao) {
+            return;
+          }
+          // getValues (não o `itens` do watch, capturado no momento da
+          // chamada) para pegar o valor mais recente digitado até a resposta
+          // chegar.
+          const precoAtual = getValues(`itens.${indice}.precoUnitario`) ?? '';
+          const ultimaSugestao = precosSugeridos[indice];
+          if (precoAtual !== '' && precoAtual !== ultimaSugestao) {
+            return;
+          }
+          const precoFormatado = paraCampo(resultado.precoSugerido);
+          setValue(`itens.${indice}.precoUnitario`, precoFormatado);
+          setPrecosSugeridos((atual) => ({ ...atual, [indice]: precoFormatado }));
+        },
+      },
+    );
+  }
+
+  function aoEscolherArquivo(itemId: number, evento: ChangeEvent<HTMLInputElement>) {
+    const arquivo = evento.target.files?.[0];
+    evento.target.value = '';
+    if (!arquivo) {
+      return;
+    }
+    const nome = arquivo.name.toLowerCase();
+    if (!nome.endsWith('.stl') && !nome.endsWith('.3mf')) {
+      toast.error('Só são aceitos modelos .stl e .3mf.');
+      return;
+    }
+    anexarArquivo.mutate({ itemId, arquivo });
+  }
+
+  function baixarArquivo(itemId: number) {
+    ordersApi
+      .baixarArquivoItem(pedidoId!, itemId)
+      .catch((erro) => toast.error(mensagemDeErro(erro)));
+  }
+
+  const itens = watch('itens');
+  const desconto = paraNumero(watch('desconto') || '') ?? 0;
+  const subtotal = itens.reduce((soma, item) => {
+    const quantidade = paraNumero(item.quantidade || '') ?? 1;
+    const preco = paraNumero(item.precoUnitario || '') ?? 0;
+    return soma + quantidade * preco;
+  }, 0);
+  const total = Math.max(subtotal - desconto, 0);
+
+  const titulo =
+    pedidoId === null
+      ? 'Novo pedido'
+      : somenteLeitura
+        ? `Pedido ${pedido?.numero ?? ''} (${pedido ? pedido.status : ''})`
+        : `Editar pedido ${pedido?.numero ?? ''}`;
+
+  return (
+    <>
+    <Dialog open={aberto} onClose={onFechar} maxWidth="lg" fullWidth>
+      <DialogTitle>{titulo}</DialogTitle>
+      <form
+        onSubmit={handleSubmit((dados) => salvar.mutate(dados))}
+        onKeyDown={(evento) => {
+          // Enter em qualquer campo do formulário não deve submeter o pedido
+          // (só o botão Salvar) — evita salvar no meio do preenchimento dos
+          // itens, antes até do preço ser recalculado.
+          const alvo = evento.target;
+          if (
+            evento.key === 'Enter' &&
+            alvo instanceof HTMLElement &&
+            (alvo.tagName === 'INPUT' || alvo.tagName === 'SELECT')
+          ) {
+            evento.preventDefault();
+          }
+        }}
+        noValidate
+      >
+        <DialogContent sx={{ pt: 1 }}>
+          {carregando ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+              <CircularProgress size={30} />
+            </Box>
+          ) : (
+            <>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gap: 2,
+                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(6, 1fr)' },
+                }}
+              >
+                <Controller
+                  name="clienteId"
+                  control={control}
+                  render={({ field }) => (
+                    <Autocomplete
+                      options={clientes?.content ?? []}
+                      getOptionLabel={(opcao) => opcao.nome}
+                      isOptionEqualToValue={(opcao, valor) => opcao.id === valor.id}
+                      value={clienteSelecionado}
+                      onChange={(_, novo) => {
+                        field.onChange(novo ? novo.id : null);
+                        setClienteSelecionado(novo);
+                      }}
+                      onInputChange={(_, texto) => setBuscaCliente(texto)}
+                      disabled={somenteLeitura}
+                      noOptionsText="Nenhum cliente encontrado"
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Cliente *"
+                          error={!!errors.clienteId}
+                          helperText={errors.clienteId?.message}
+                        />
+                      )}
+                      sx={{ gridColumn: { sm: 'span 3' } }}
+                    />
+                  )}
+                />
+                <TextField
+                  label="Entrega prevista"
+                  type="date"
+                  disabled={somenteLeitura}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  sx={{ gridColumn: { sm: 'span 1' } }}
+                  {...register('dataEntregaPrevista')}
+                />
+                <TextField
+                  label="Desconto (R$)"
+                  disabled={somenteLeitura}
+                  error={!!errors.desconto}
+                  helperText={errors.desconto?.message}
+                  sx={{ gridColumn: { sm: 'span 1' } }}
+                  {...register('desconto')}
+                />
+                <TextField
+                  label="Observações"
+                  disabled={somenteLeitura}
+                  sx={{ gridColumn: { sm: 'span 1' } }}
+                  {...register('observacoes')}
+                />
+              </Box>
+
+              <Divider sx={{ my: 2 }}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Itens do pedido
+                </Typography>
+              </Divider>
+              {typeof errors.itens?.message === 'string' && (
+                <Typography color="error" variant="body2" sx={{ mb: 1 }}>
+                  {errors.itens.message}
+                </Typography>
+              )}
+
+              {fields.map((campo, indice) => {
+                // Id real do item (o `campo.id` do useFieldArray é a key
+                // interna do RHF, não o id do backend). Sem id (pedido ou
+                // item ainda não salvos), os blocos de arquivo/impressão somem.
+                const itemId = itens[indice]?.id ?? null;
+                const itemPedido =
+                  itemId !== null ? pedido?.itens.find((i) => i.id === itemId) : undefined;
+                const impressaoAtiva = itemId !== null ? impressaoPorItem.get(itemId) : undefined;
+
+                return (
+                <Box
+                  key={campo.id}
+                  sx={{
+                    display: 'grid',
+                    gap: 1.5,
+                    gridTemplateColumns: { xs: '1fr', md: '3fr 2fr 1fr 1fr 1fr 1.4fr auto' },
+                    alignItems: 'start',
+                    mb: 1.5,
+                    p: 1.5,
+                    borderRadius: 1,
+                    bgcolor: 'action.hover',
+                  }}
+                >
+                  <TextField
+                    label="Peça *"
+                    size="small"
+                    disabled={somenteLeitura}
+                    error={!!errors.itens?.[indice]?.nomePeca}
+                    helperText={errors.itens?.[indice]?.nomePeca?.message}
+                    {...register(`itens.${indice}.nomePeca`)}
+                  />
+                  <TextField
+                    label="Filamento"
+                    size="small"
+                    select
+                    disabled={somenteLeitura}
+                    defaultValue={campo.filamentoId}
+                    slotProps={{ select: { native: true }, inputLabel: { shrink: true } }}
+                    {...register(`itens.${indice}.filamentoId`, {
+                      onChange: () => sugerirPreco(indice),
+                    })}
+                  >
+                    <option value="">—</option>
+                    {filamentos?.content.map((filamento) => (
+                      <option key={filamento.id} value={String(filamento.id)}>
+                        {filamento.nome}
+                      </option>
+                    ))}
+                  </TextField>
+                  <TextField
+                    label="Qtde"
+                    size="small"
+                    disabled={somenteLeitura}
+                    error={!!errors.itens?.[indice]?.quantidade}
+                    helperText={errors.itens?.[indice]?.quantidade?.message}
+                    {...register(`itens.${indice}.quantidade`)}
+                  />
+                  <TextField
+                    label="Peso (g)"
+                    size="small"
+                    disabled={somenteLeitura}
+                    error={!!errors.itens?.[indice]?.pesoEstimadoG}
+                    helperText={errors.itens?.[indice]?.pesoEstimadoG?.message}
+                    onKeyDown={(evento) => {
+                      if (evento.key === 'Enter') {
+                        evento.currentTarget.blur();
+                      }
+                    }}
+                    {...register(`itens.${indice}.pesoEstimadoG`, {
+                      onBlur: () => sugerirPreco(indice),
+                    })}
+                  />
+                  <TextField
+                    label="Tempo (min)"
+                    size="small"
+                    disabled={somenteLeitura}
+                    error={!!errors.itens?.[indice]?.tempoImpressaoMinutos}
+                    helperText={errors.itens?.[indice]?.tempoImpressaoMinutos?.message}
+                    onKeyDown={(evento) => {
+                      if (evento.key === 'Enter') {
+                        evento.currentTarget.blur();
+                      }
+                    }}
+                    {...register(`itens.${indice}.tempoImpressaoMinutos`, {
+                      onBlur: () => sugerirPreco(indice),
+                    })}
+                  />
+                  <TextField
+                    label="Preço unit. (R$)"
+                    size="small"
+                    disabled={somenteLeitura}
+                    error={!!errors.itens?.[indice]?.precoUnitario}
+                    helperText={
+                      errors.itens?.[indice]?.precoUnitario?.message ||
+                      'Deixe em branco para calcular automaticamente.'
+                    }
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    {...register(`itens.${indice}.precoUnitario`)}
+                  />
+                  {!somenteLeitura && (
+                    <Tooltip title="Remover item">
+                      <span>
+                        <IconButton
+                          aria-label="Remover item"
+                          onClick={() => remove(indice)}
+                          disabled={fields.length === 1}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  )}
+                  {(() => {
+                      if (itemId === null) {
+                        return somenteLeitura ? null : (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ gridColumn: '1 / -1' }}
+                          >
+                            Modelo 3D: salve o pedido para poder anexar o arquivo.
+                          </Typography>
+                        );
+                      }
+                      const arquivo = arquivos[itemId];
+                      return (
+                        <Box
+                          sx={{
+                            gridColumn: '1 / -1',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                          }}
+                        >
+                          <Typography variant="caption" color="text.secondary">
+                            Modelo 3D:{' '}
+                            {arquivo ? nomeDoArquivoModelo(arquivo) : 'nenhum arquivo anexado'}
+                          </Typography>
+                          {arquivo && (
+                            <Tooltip title="Baixar modelo">
+                              <IconButton
+                                size="small"
+                                aria-label="Baixar modelo"
+                                onClick={() => baixarArquivo(itemId)}
+                              >
+                                <FileDownloadIcon fontSize="inherit" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          {!somenteLeitura && (
+                            <>
+                              <Tooltip title="Anexar modelo (.stl ou .3mf)">
+                                <IconButton
+                                  size="small"
+                                  component="label"
+                                  aria-label="Anexar modelo"
+                                  disabled={anexarArquivo.isPending}
+                                >
+                                  <UploadFileIcon fontSize="inherit" />
+                                  <input
+                                    hidden
+                                    type="file"
+                                    accept=".stl,.3mf"
+                                    onChange={(evento) => aoEscolherArquivo(itemId, evento)}
+                                  />
+                                </IconButton>
+                              </Tooltip>
+                              {arquivo && (
+                                <Tooltip title="Remover modelo">
+                                  <IconButton
+                                    size="small"
+                                    aria-label="Remover modelo"
+                                    onClick={() => removerArquivo.mutate(itemId)}
+                                    disabled={removerArquivo.isPending}
+                                  >
+                                    <DeleteOutlineIcon fontSize="inherit" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </>
+                          )}
+                        </Box>
+                      );
+                    })()}
+                  {pedido?.status === 'EM_PRODUCAO' && itemId !== null && itemPedido && (
+                    <Box
+                      sx={{
+                        gridColumn: '1 / -1',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <Typography variant="caption" color="text.secondary">
+                        Impressão:
+                      </Typography>
+                      {impressaoAtiva ? (
+                        <>
+                          <Chip
+                            size="small"
+                            color={CORES_STATUS_IMPRESSAO[impressaoAtiva.status]}
+                            label={`${ROTULOS_STATUS_IMPRESSAO[impressaoAtiva.status]} — ${impressaoAtiva.impressoraNome}`}
+                          />
+                          <Tooltip title="Concluir">
+                            <IconButton
+                              size="small"
+                              color="success"
+                              aria-label="Concluir impressão"
+                              onClick={() =>
+                                setFinalizacao({ impressao: impressaoAtiva, modo: 'concluir' })
+                              }
+                            >
+                              <CheckCircleIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Registrar falha">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              aria-label="Registrar falha na impressão"
+                              onClick={() =>
+                                setFinalizacao({ impressao: impressaoAtiva, modo: 'falhar' })
+                              }
+                            >
+                              <ReportProblemIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Cancelar job">
+                            <IconButton
+                              size="small"
+                              aria-label="Cancelar job de impressão"
+                              onClick={() => setImpressaoParaCancelar(impressaoAtiva)}
+                            >
+                              <CancelIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </>
+                      ) : (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<PrintIcon />}
+                          onClick={() => setItemParaIniciar(itemPedido)}
+                        >
+                          Iniciar impressão
+                        </Button>
+                      )}
+                    </Box>
+                  )}
+                </Box>
+                );
+              })}
+
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mt: 2,
+                  flexWrap: 'wrap',
+                  gap: 1,
+                }}
+              >
+                {!somenteLeitura ? (
+                  <Button startIcon={<AddIcon />} onClick={() => append(ITEM_VAZIO)}>
+                    Adicionar item
+                  </Button>
+                ) : (
+                  <span />
+                )}
+                <Typography variant="subtitle1">
+                  Subtotal: {moeda.format(subtotal)} — Desconto: {moeda.format(desconto)} —{' '}
+                  <b>Total: {moeda.format(total)}</b>
+                </Typography>
+              </Box>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={onFechar} color="inherit" disabled={salvar.isPending}>
+            {somenteLeitura ? 'Fechar' : 'Cancelar'}
+          </Button>
+          {!somenteLeitura && (
+            <Button type="submit" variant="contained" disabled={salvar.isPending || carregando}>
+              {salvar.isPending ? 'Salvando…' : 'Salvar'}
+            </Button>
+          )}
+        </DialogActions>
+      </form>
+    </Dialog>
+
+    {pedido && (
+      <>
+        <PrintStartDialog
+          aberto={itemParaIniciar !== null}
+          onFechar={() => setItemParaIniciar(null)}
+          predefinido={
+            itemParaIniciar
+              ? {
+                  pedidoId: pedido.id,
+                  itemPedidoId: itemParaIniciar.id,
+                  filamentoId: itemParaIniciar.filamentoId,
+                  resumo: `${itemParaIniciar.nomePeca} — Pedido ${pedido.numero}${
+                    itemParaIniciar.filamentoNome ? ` — ${itemParaIniciar.filamentoNome}` : ''
+                  }`,
+                }
+              : undefined
+          }
+        />
+
+        <PrintFinishDialog
+          impressao={finalizacao?.impressao ?? null}
+          modo={finalizacao?.modo ?? 'concluir'}
+          pesoSugeridoG={
+            finalizacao
+              ? (pedido.itens.find((i) => i.id === finalizacao.impressao.itemPedidoId)
+                  ?.pesoEstimadoG ?? null)
+              : null
+          }
+          onFechar={() => setFinalizacao(null)}
+        />
+
+        <ConfirmDialog
+          aberto={impressaoParaCancelar !== null}
+          titulo="Cancelar impressão"
+          mensagem={`O job na impressora ${impressaoParaCancelar?.impressoraNome} será cancelado e a máquina liberada, sem consumo de estoque. Deseja continuar?`}
+          rotuloConfirmar="Cancelar job"
+          processando={cancelarImpressao.isPending}
+          onConfirmar={() =>
+            impressaoParaCancelar && cancelarImpressao.mutate(impressaoParaCancelar.id)
+          }
+          onCancelar={() => setImpressaoParaCancelar(null)}
+        />
+      </>
+    )}
+    </>
+  );
+}
