@@ -34,4 +34,25 @@ class Print3dManagerErpApplicationTests extends AbstractIntegrationTest {
     void usuarioDemoSemeado() {
         assertThat(userRepository.findByEmailIgnoreCase("demo@print3d.com")).isPresent();
     }
+
+    @Test
+    @DisplayName("seed de demonstração: clientes e pedidos em todos os status, com atrasados")
+    void seedDeDemonstracao() throws Exception {
+        // Independe da ordem dos testes: recarrega o script da migration V3 numa base limpa.
+        jdbcTemplate.execute("TRUNCATE pedidos, clientes RESTART IDENTITY CASCADE");
+        try (var conn = java.util.Objects.requireNonNull(jdbcTemplate.getDataSource()).getConnection()) {
+            org.springframework.jdbc.datasource.init.ScriptUtils.executeSqlScript(conn,
+                    new org.springframework.core.io.ClassPathResource("db/migration/V3__seed_dados_demo.sql"));
+        }
+        Integer clientes = jdbcTemplate.queryForObject("select count(*) from clientes", Integer.class);
+        Integer pedidos = jdbcTemplate.queryForObject("select count(*) from pedidos", Integer.class);
+        Integer status = jdbcTemplate.queryForObject("select count(distinct status) from pedidos", Integer.class);
+        Integer atrasados = jdbcTemplate.queryForObject(
+                "select count(*) from pedidos where status in ('PENDENTE','EM_PRODUCAO') and prazo < current_date",
+                Integer.class);
+        assertThat(clientes).isGreaterThanOrEqualTo(5);
+        assertThat(pedidos).isGreaterThanOrEqualTo(10);
+        assertThat(status).isEqualTo(5);
+        assertThat(atrasados).isGreaterThanOrEqualTo(1);
+    }
 }

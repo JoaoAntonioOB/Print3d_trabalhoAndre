@@ -1,6 +1,7 @@
 package com.print3dmanager.erp.order.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -22,9 +23,11 @@ public record OrderCreateRequest(
         String material,
         @NotNull(message = "O peso é obrigatório")
         @Positive(message = "O peso deve ser maior que zero")
+        @Digits(integer = 8, fraction = 2, message = "Peso inválido (até 2 casas decimais)")
         BigDecimal pesoGramas,
         @NotNull(message = "O valor é obrigatório")
         @Positive(message = "O valor deve ser maior que zero")
+        @Digits(integer = 10, fraction = 2, message = "Valor inválido (até 2 casas decimais)")
         BigDecimal valor,
         @NotNull(message = "O prazo é obrigatório")
         @FutureOrPresent(message = "O prazo não pode estar no passado")

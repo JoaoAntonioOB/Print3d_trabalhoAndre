@@ -11,3 +11,10 @@ application:
     jwt:
       # Sem default: produção deve falhar se JWT_SECRET não estiver definido.
       secret: ${JWT_SECRET}
+
+# Em produção a documentação interativa fica desligada.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

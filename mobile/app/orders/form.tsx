@@ -15,6 +15,8 @@ import { LoadingState } from '../../src/components/ScreenState';
 import { colors, spacing } from '../../src/theme';
 import { brToIso, isoToBr, maskDate, parseDecimal, todayIso } from '../../src/utils/format';
 
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
 const MATERIALS = ['PLA', 'PETG', 'ABS', 'TPU'];
 
 const positive = (v: string) => {
@@ -112,8 +114,8 @@ export default function OrderForm() {
         clienteId: data.clienteId,
         descricao: data.descricao.trim(),
         material: data.material.trim().toUpperCase(),
-        pesoGramas: parseDecimal(data.pesoGramas),
-        valor: parseDecimal(data.valor),
+        pesoGramas: round2(parseDecimal(data.pesoGramas)),
+        valor: round2(parseDecimal(data.valor)),
         prazo,
       });
     } catch (e) {

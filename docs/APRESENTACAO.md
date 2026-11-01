@@ -1,20 +1,76 @@
 # Apresentação — Print3D Mobile
 
-**Problema:** pequenas empresas de impressão 3D controlam clientes e pedidos em planilhas e WhatsApp, sem visão clara de status, prazos e faturamento.
+## O problema
+Pequenas empresas de impressão 3D controlam **clientes e pedidos em planilhas e WhatsApp**, sem visão clara de status, prazos e faturamento. Pedidos atrasam sem ninguém perceber e o dono não sabe quanto vendeu no mês.
+
 **Público:** donos e operadores dessas empresas.
-**Benefícios:** centralizar clientes e pedidos, acompanhar status e prazos, ver indicadores no dashboard e cadastrar clientes rápido (endereço pelo CEP).
+
+## A solução
+App mobile (React Native/Expo) que centraliza **clientes, pedidos e indicadores**, com:
+- login seguro (só quem tem conta acessa);
+- cadastro de clientes com **endereço preenchido automaticamente pelo CEP**;
+- pedidos com **ciclo de status controlado** (Pendente → Em produção → Concluído → Entregue, ou Cancelado);
+- **dashboard** com clientes, pedidos abertos, faturamento do mês, pedidos atrasados e gráfico por status.
+
+## Arquitetura (BFF)
+```
+App (Expo/React Native) ──HTTPS/JSON + JWT──▶ API BFF (Spring Boot) ──▶ PostgreSQL
+                                                  └──▶ ViaCEP (API externa)
+```
+- O app **nunca acessa o banco** nem a ViaCEP: só conversa com a API.
+- A API aplica as **regras de negócio**, valida, persiste e chama a API externa.
+- `GET /api/dashboard` devolve numa só chamada tudo que a tela inicial precisa (é o que "serve o app").
+
+## Integração com API externa: ViaCEP
+1. O usuário digita o CEP (máscara `00000-000`).
+2. Com 8 dígitos o app chama `GET /api/cep/{cep}` **na nossa API** (autenticada).
+3. A API valida o formato, consulta `viacep.com.br` com timeout curto (3 s), guarda em cache e devolve só `{cep, logradouro, bairro, cidade, estado}`.
+4. O app preenche logradouro, bairro, cidade e UF (editáveis) e leva o foco ao "Número".
+
+| Situação | Resposta da API | O que o usuário vê |
+|---|---|---|
+| CEP válido | 200 | endereço preenchido |
+| CEP malformado | 400 | "CEP inválido: informe 8 dígitos" |
+| CEP inexistente (a ViaCEP responde 200 com `erro`) | 404 | "CEP não encontrado, preencha manualmente." |
+| ViaCEP fora do ar / timeout | 503 | "Serviço de CEP indisponível, preencha manualmente." |
+
+A falha da API externa **nunca bloqueia o cadastro**.
+
+## Roteiro da demonstração (≈ 5 min)
+Pré-requisitos: banco e API no ar, celular na mesma rede (ver README). Os dados de exemplo já estão carregados.
+
+1. **Login** — entrar com `demo@print3d.com` / `admin123`. Mostrar antes um erro: senha errada → "E-mail ou senha inválidos." *(valida autenticação e mensagens claras)*.
+2. **Dashboard** — apresentar os cards, o gráfico por status e os **2 pedidos atrasados** em destaque. Puxar para atualizar.
+3. **Clientes** — abrir a lista, buscar por "Studio". Tocar em **Novo cliente**, digitar o CEP `01001-000` e mostrar o endereço preenchendo sozinho. Salvar.
+4. **Erro tratado** — tentar um CEP inexistente (`99999-999`): mensagem amigável e cadastro continua possível. Tentar salvar sem nome: campo marcado.
+5. **Pedido** — no cliente recém-criado, **Novo pedido** (material PLA, peso `120,5`, valor `45,90`, prazo futuro). Tentar prazo no passado → erro no campo.
+6. **Status** — no detalhe, avançar *Iniciar produção → Concluído → Entregue*; mostrar que só aparecem as transições válidas e que **cancelar** pede confirmação. Pedido entregue não pode mais ser alterado.
+7. **Regra de negócio** — tentar excluir um cliente que tem pedidos → "Não é possível excluir o cliente X: ele possui pedidos." (409).
+8. **Volta ao dashboard** — os números e o gráfico mudaram. **Sair** → volta ao login; sem token as rotas não abrem.
 
 ## Matriz de aderência ao enunciado
 
-| Requisito do professor | Como atendemos | Marco |
+| Requisito do professor | Como atendemos | Onde ver |
 |---|---|---|
-| Login e autenticação, funcionalidades só para autenticados | Login JWT na API; rotas do app protegidas; logout; 401 derruba a sessão | 1 |
-| Dashboard com indicadores relevantes | Clientes, pedidos por status, faturamento do mês, pedidos atrasados e últimos pedidos | 4 |
-| Cadastro, consulta, edição e exclusão | CRUD de Clientes e Pedidos | 2 e 3 |
-| Integração com API externa | ViaCEP no cadastro de cliente (CEP preenche o endereço) | 2 |
-| API BFF com regras de negócio e persistência; app sem acesso direto ao banco | Spring Boot atuando como BFF | 0 a 4 |
-| Fluxo completo, validação de campos, tratamento de erros, mensagens claras | Zod no app + Bean Validation na API + erro padronizado | todos, fechamento no 5 |
-| Apresentação (demo, integrações, aderência ao problema) | Este documento | 5 |
+| Login e autenticação, funcionalidades só para autenticados | Login JWT na API; rotas do app protegidas; logout; 401 derruba a sessão; token no armazenamento seguro | `app/login.tsx`, `AuthContext`, `security/` |
+| Dashboard com indicadores relevantes | Clientes, pedidos abertos, faturamento do mês, atrasados, gráfico por status, últimos pedidos | `app/index.tsx`, `GET /api/dashboard` |
+| Cadastro, consulta, edição e exclusão | CRUD de **Clientes** e **Pedidos** (busca, filtro por status, paginação) | `app/clients/*`, `app/orders/*` |
+| Integração com API externa | **ViaCEP** no cadastro de cliente | `cep/*` (API), `clients/form.tsx` |
+| API BFF com regras de negócio e persistência; app sem acesso direto ao banco | Spring Boot + PostgreSQL com Flyway; o app só fala HTTP com a API | `backend/` |
+| Fluxo completo, validação de campos, tratamento de erros, mensagens claras | Zod no app + Bean Validation na API + erro padrão `{code, message, fieldErrors[]}`; estados de carregando, vazio e erro | todas as telas |
+| Apresentação (demo, integrações, aderência ao problema) | Este documento | — |
 
-## Roteiro da demo
-_(a preencher no Marco 5)_ login → cadastro de cliente com CEP → criação de pedido → mudança de status → dashboard.
+## Regras de negócio (na API)
+- Cliente: nome obrigatório; e-mail e telefone válidos; CEP com 8 dígitos; CPF/CNPJ único; **não pode ser excluído se tiver pedidos** (409).
+- Pedido: cliente existente; valor e peso > 0 (até 2 casas); prazo não pode estar no passado na criação; transições `PENDENTE → EM_PRODUCAO → CONCLUIDO → ENTREGUE` e `CANCELADO` a partir de PENDENTE/EM_PRODUCAO; só PENDENTE/EM_PRODUCAO podem ser editados; só PENDENTE/CANCELADO podem ser excluídos.
+
+## Segurança (resumo)
+- Senhas com BCrypt; JWT assinado (segredo só por variável de ambiente em produção; a API recusa subir sem ele).
+- Todas as rotas, exceto login e health, exigem token; token guardado no `expo-secure-store`.
+- Dados de clientes não vão para logs; `.env` fora do git; Swagger desligado em produção; mensagens de erro não expõem detalhes internos.
+- Limitações assumidas (escopo acadêmico): sem limite de tentativas de login, sem renovação de token (validade de 24 h), HTTP em rede local na demo (em produção, usar HTTPS).
+
+## Tecnologias
+**App:** Expo, TypeScript, Expo Router, React Native Paper, TanStack Query, React Hook Form + Zod, axios, expo-secure-store, react-native-gifted-charts.
+**API:** Java 21, Spring Boot 3.5, Spring Security + JWT, JPA, Flyway, MapStruct, PostgreSQL 16.
+**Testes:** 36 automatizados (unitários das regras de status e do cliente ViaCEP com HTTP simulado; integração com PostgreSQL real via Testcontainers).
