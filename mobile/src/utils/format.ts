@@ -46,3 +46,26 @@ export function maskDate(v: string): string {
   if (d.length > 2) return `${d.slice(0, 2)}/${d.slice(2)}`;
   return d;
 }
+
+/** 1.234 -> "1,2 mil"; 1.500.000 -> "1,5 mi"; abaixo de mil mantém o número inteiro (sem "R$"). */
+export function formatCompact(n: number): string {
+  const abs = Math.abs(n);
+  const trim = (v: number) => v.toFixed(1).replace('.', ',').replace(/,0$/, '');
+  if (abs >= 1_000_000) return `${trim(n / 1_000_000)} mi`;
+  if (abs >= 1_000) return `${trim(n / 1_000)} mil`;
+  return String(Math.round(n));
+}
+
+/** 850 -> "850 g"; 1250 -> "1,25 kg". */
+export function formatWeight(grams: number): string {
+  if (grams < 1000) return `${String(Math.round(grams * 10) / 10).replace('.', ',')} g`;
+  return `${(grams / 1000).toFixed(2).replace('.', ',').replace(/,?0+$/, '')} kg`;
+}
+
+const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+/** "2026-11" -> "nov" */
+export function monthLabel(yyyyMm: string): string {
+  const m = Number(yyyyMm.split('-')[1]);
+  return MONTHS[m - 1] ?? yyyyMm;
+}

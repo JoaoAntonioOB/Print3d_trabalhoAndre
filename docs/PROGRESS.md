@@ -17,6 +17,8 @@
 
 - **Polimento visual (skills `frontend-design` e `design-taste-frontend`):** fonte IBM Plex Sans (dígitos de largura fixa) carregada no início do app; paleta nova — tinta quase preta nos botões e uma única cor de destaque (laranja de impressora 3D, `#c2410c`) usada só em dados e marca; superfícies planas com borda fina e raios de 6/8 px; painel refeito (pergunta principal primeiro, indicadores como tipografia numa lista com linhas finas, fila de produção em barras de uma cor só, sem ícones em círculos coloridos). Biblioteca de gráficos removida (barras feitas no app). Skills ficam fora do git (`.agents/`).
 
+- **Dashboard ampliado:** `GET /api/dashboard` agora também entrega ticket médio, valor em aberto, peso total de material, vendas dos últimos 6 meses, maiores clientes, uso por material e vencimentos dos próximos 7 dias. Seed de histórico `V4` (19 pedidos nos 5 meses anteriores) para o gráfico de vendas ter série. App: painel com gráfico de colunas mensal, lista de barras (fila, clientes, materiais) e listas de pedidos. 45 testes passando.
+
 ## Pendências / opcionais
 - Renomear `backend/` → `api/` (a pasta estava travada pela IDE); ajustar caminhos nos docs e no CI.
 - Validar o layout revisado e o Marco 4/5 no iPhone (a revisão visual não pôde ser feita pelo assistente).

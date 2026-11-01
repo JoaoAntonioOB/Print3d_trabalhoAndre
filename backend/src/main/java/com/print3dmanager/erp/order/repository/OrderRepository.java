@@ -45,4 +45,45 @@ public interface OrderRepository
 
     @EntityGraph(attributePaths = "cliente")
     List<Order> findAllByOrderByCriadoEmDesc(Pageable pageable);
+
+    // ---- indicadores adicionais do dashboard ----
+
+    /** [quantidade, soma dos valores, soma dos pesos em gramas] dos pedidos que não têm o status ignorado. */
+    @Query("""
+            SELECT COUNT(o), COALESCE(SUM(o.valor), 0), COALESCE(SUM(o.pesoGramas), 0) FROM Order o
+            WHERE o.status <> :ignorado
+            """)
+    List<Object[]> totais(@Param("ignorado") OrderStatus ignorado);
+
+    @Query("SELECT COALESCE(SUM(o.valor), 0) FROM Order o WHERE o.status IN :status")
+    BigDecimal somarValorPorStatus(@Param("status") Collection<OrderStatus> status);
+
+    /** [data de criação, valor] dos pedidos criados desde o início do período (agrupado em Java, por mês). */
+    @Query("""
+            SELECT o.criadoEm, o.valor FROM Order o
+            WHERE o.status <> :ignorado AND o.criadoEm >= :inicio
+            """)
+    List<Object[]> vendasDesde(@Param("ignorado") OrderStatus ignorado, @Param("inicio") Instant inicio);
+
+    /** [id do cliente, nome, pedidos, valor total], do maior para o menor valor. */
+    @Query("""
+            SELECT c.id, c.nome, COUNT(o), SUM(o.valor) FROM Order o JOIN o.cliente c
+            WHERE o.status <> :ignorado
+            GROUP BY c.id, c.nome
+            ORDER BY SUM(o.valor) DESC
+            """)
+    List<Object[]> maioresClientes(@Param("ignorado") OrderStatus ignorado, Pageable pageable);
+
+    /** [material, pedidos, peso em gramas, valor], do mais pedido para o menos pedido. */
+    @Query("""
+            SELECT o.material, COUNT(o), SUM(o.pesoGramas), SUM(o.valor) FROM Order o
+            WHERE o.status <> :ignorado
+            GROUP BY o.material
+            ORDER BY COUNT(o) DESC, SUM(o.valor) DESC
+            """)
+    List<Object[]> usoPorMaterial(@Param("ignorado") OrderStatus ignorado);
+
+    @EntityGraph(attributePaths = "cliente")
+    List<Order> findByStatusInAndPrazoBetweenOrderByPrazoAsc(
+            Collection<OrderStatus> status, LocalDate de, LocalDate ate, Pageable pageable);
 }

@@ -1,16 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import type { ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Icon, Text } from 'react-native-paper';
 import { getDashboard } from '../src/api/dashboard';
 import { toApiError } from '../src/api/http';
 import { ORDER_STATUSES, STATUS_LABEL, type Order } from '../src/api/orders';
 import { useAuth } from '../src/auth/AuthContext';
+import { MonthlyBars } from '../src/components/MonthlyBars';
 import { Screen } from '../src/components/Screen';
 import { ErrorState, LoadingState } from '../src/components/ScreenState';
 import { StatusChip } from '../src/components/StatusChip';
 import { colors, fonts, layout, radius, spacing } from '../src/theme';
-import { formatBRL, isoToBr } from '../src/utils/format';
+import { formatBRL, formatWeight, isoToBr } from '../src/utils/format';
 
 const num = { fontVariant: ['tabular-nums'] as const };
 
@@ -37,14 +39,69 @@ function OrderRow({ order, last, onPress }: { order: Order; last: boolean; onPre
   );
 }
 
-function Section({ title, count, children }: { title: string; count?: number; children: React.ReactNode }) {
+function Section({ title, hint, count, children }: { title: string; hint?: string; count?: number; children: ReactNode }) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHead}>
         <Text variant="titleMedium" style={styles.sectionTitle}>{title}</Text>
         {count ? <Text style={[styles.sectionCount, num]}>{count}</Text> : null}
       </View>
+      {hint ? <Text variant="bodySmall" style={styles.muted}>{hint}</Text> : null}
       {children}
+    </View>
+  );
+}
+
+/** Célula de indicador: rótulo cinza sobre o valor; sem ícone, sem azulejo. */
+function Kpi({ label, value, tone, onPress, divider }: {
+  label: string;
+  value: string;
+  tone?: string;
+  onPress?: () => void;
+  divider?: boolean;
+}) {
+  return (
+    <Pressable
+      style={[styles.kpi, divider && styles.kpiDivider]}
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={`${label}: ${value}`}
+    >
+      <Text variant="bodySmall" style={styles.muted} numberOfLines={1}>{label}</Text>
+      <Text style={[styles.kpiValue, num, tone ? { color: tone } : null]} numberOfLines={1} adjustsFontSizeToFit>
+        {value}
+      </Text>
+    </Pressable>
+  );
+}
+
+/** Linha com barra proporcional: rótulo, barra e valor. */
+function BarRow({ label, sub, value, ratio, accent, last }: {
+  label: string;
+  sub?: string;
+  value: string;
+  ratio: number;
+  accent?: boolean;
+  last: boolean;
+}) {
+  return (
+    <View style={[styles.barRow, !last && styles.rowRule]}>
+      <View style={styles.barHead}>
+        <View style={styles.flex}>
+          <Text variant="bodyMedium" style={styles.text} numberOfLines={1}>{label}</Text>
+          {sub ? <Text variant="bodySmall" style={styles.muted} numberOfLines={1}>{sub}</Text> : null}
+        </View>
+        <Text variant="titleSmall" style={[styles.barValue, num]}>{value}</Text>
+      </View>
+      <View style={styles.barTrack}>
+        <View
+          style={[
+            styles.barFill,
+            { width: `${Math.max(2, Math.min(100, ratio * 100))}%`, backgroundColor: accent ? colors.accent : colors.control },
+          ]}
+        />
+      </View>
     </View>
   );
 }
@@ -68,7 +125,10 @@ export default function Dashboard() {
   const d = query.data;
   const openOrder = (o: Order) => router.push({ pathname: '/orders/[id]', params: { id: String(o.id) } });
   const count = (s: (typeof ORDER_STATUSES)[number]) => d.pedidosPorStatus[s] ?? 0;
-  const maxCount = Math.max(1, ...ORDER_STATUSES.map(count));
+  const maxStatus = Math.max(1, ...ORDER_STATUSES.map(count));
+  const maxCliente = Math.max(1, ...d.maioresClientes.map((c) => c.total));
+  const maxMaterial = Math.max(1, ...d.materiais.map((m) => m.pedidos));
+  const totalSeisMeses = d.vendasMensais.reduce((acc, v) => acc + v.total, 0);
   const firstName = user?.nome?.split(' ')[0];
 
   return (
@@ -82,7 +142,7 @@ export default function Dashboard() {
           <Text variant="bodyMedium" style={styles.muted}>Pedidos em aberto{firstName ? ` · ${firstName}` : ''}</Text>
           <Text style={[styles.leadValue, num]}>{d.pedidosAbertos}</Text>
           <Text variant="bodyMedium" style={[styles.muted, num]}>
-            {count('EM_PRODUCAO')} em produção · {count('PENDENTE')} pendentes
+            {count('EM_PRODUCAO')} em produção · {count('PENDENTE')} pendentes · {formatBRL(d.valorEmAberto)} a receber
           </Text>
           {d.totalAtrasados > 0 ? (
             <View style={styles.alert}>
@@ -94,47 +154,51 @@ export default function Dashboard() {
           ) : null}
         </Pressable>
 
-        {/* Números de apoio: um bloco com linhas finas, sem azulejos. */}
+        {/* Indicadores: um bloco de 2 colunas, divisórias finas, sem azulejos. */}
         <View style={styles.panel}>
-          <Pressable style={[styles.kpiRow, styles.rowRule]} onPress={() => router.push('/clients')} accessibilityRole="button">
-            <Text variant="bodyMedium" style={styles.muted}>Clientes</Text>
-            <Text variant="titleMedium" style={[styles.kpiValue, num]}>{d.totalClientes}</Text>
-          </Pressable>
-          <View style={[styles.kpiRow, styles.rowRule]}>
-            <Text variant="bodyMedium" style={styles.muted}>Faturamento do mês</Text>
-            <Text variant="titleMedium" style={[styles.kpiValue, num]}>{formatBRL(d.faturamentoMes)}</Text>
+          <View style={[styles.kpiRowPair, styles.rowRule]}>
+            <Kpi label="Faturamento do mês" value={formatBRL(d.faturamentoMes)} divider />
+            <Kpi label="Ticket médio" value={formatBRL(d.ticketMedio)} />
           </View>
-          <View style={styles.kpiRow}>
-            <Text variant="bodyMedium" style={styles.muted}>Atrasados</Text>
-            <Text
-              variant="titleMedium"
-              style={[styles.kpiValue, num, d.totalAtrasados > 0 && { color: colors.error }]}
-            >
-              {d.totalAtrasados}
-            </Text>
+          <View style={styles.kpiRowPair}>
+            <Kpi label="Clientes" value={String(d.totalClientes)} onPress={() => router.push('/clients')} divider />
+            <Kpi label="Material nos pedidos" value={formatWeight(d.pesoTotalGramas)} />
           </View>
         </View>
 
-        {/* Lista de barras: uma série, uma cor; o destaque fica no que está sendo impresso agora. */}
+        <Section
+          title="Vendas por mês"
+          hint={`Últimos 6 meses · ${formatBRL(totalSeisMeses)} no período · valores em R$`}
+        >
+          <View style={[styles.panel, styles.chartPanel]}>
+            <MonthlyBars data={d.vendasMensais} />
+          </View>
+        </Section>
+
         <Section title="Fila de produção">
           <View style={styles.panel}>
             {ORDER_STATUSES.map((s, i) => (
-              <View key={s} style={[styles.barRow, i < ORDER_STATUSES.length - 1 && styles.rowRule]}>
-                <Text variant="bodyMedium" style={styles.barLabel}>{STATUS_LABEL[s]}</Text>
-                <View style={styles.barTrack}>
-                  <View
-                    style={[
-                      styles.barFill,
-                      {
-                        width: `${(count(s) / maxCount) * 100}%`,
-                        backgroundColor: s === 'EM_PRODUCAO' ? colors.accent : colors.control,
-                      },
-                    ]}
-                  />
-                </View>
-                <Text variant="titleSmall" style={[styles.barValue, num]}>{count(s)}</Text>
-              </View>
+              <BarRow
+                key={s}
+                label={STATUS_LABEL[s]}
+                value={String(count(s))}
+                ratio={count(s) / maxStatus}
+                accent={s === 'EM_PRODUCAO'}
+                last={i === ORDER_STATUSES.length - 1}
+              />
             ))}
+          </View>
+        </Section>
+
+        <Section title="Vencem nos próximos 7 dias" count={d.proximosVencimentos.length}>
+          <View style={styles.panel}>
+            {d.proximosVencimentos.length === 0 ? (
+              <Text style={styles.empty}>Nenhum pedido vence nesta semana.</Text>
+            ) : (
+              d.proximosVencimentos.map((o, i) => (
+                <OrderRow key={o.id} order={o} last={i === d.proximosVencimentos.length - 1} onPress={() => openOrder(o)} />
+              ))
+            )}
           </View>
         </Section>
 
@@ -145,6 +209,46 @@ export default function Dashboard() {
             ) : (
               d.pedidosAtrasados.map((o, i) => (
                 <OrderRow key={o.id} order={o} last={i === d.pedidosAtrasados.length - 1} onPress={() => openOrder(o)} />
+              ))
+            )}
+          </View>
+        </Section>
+
+        <Section title="Maiores clientes" hint="Por valor em pedidos, sem cancelados">
+          <View style={styles.panel}>
+            {d.maioresClientes.length === 0 ? (
+              <Text style={styles.empty}>Ainda não há pedidos.</Text>
+            ) : (
+              d.maioresClientes.map((c, i) => (
+                <BarRow
+                  key={c.clienteId}
+                  label={c.nome}
+                  sub={`${c.pedidos} ${c.pedidos === 1 ? 'pedido' : 'pedidos'}`}
+                  value={formatBRL(c.total)}
+                  ratio={c.total / maxCliente}
+                  accent={i === 0}
+                  last={i === d.maioresClientes.length - 1}
+                />
+              ))
+            )}
+          </View>
+        </Section>
+
+        <Section title="Materiais" hint="Pedidos, peso e valor por material">
+          <View style={styles.panel}>
+            {d.materiais.length === 0 ? (
+              <Text style={styles.empty}>Ainda não há pedidos.</Text>
+            ) : (
+              d.materiais.map((m, i) => (
+                <BarRow
+                  key={m.material}
+                  label={m.material}
+                  sub={`${m.pedidos} ${m.pedidos === 1 ? 'pedido' : 'pedidos'} · ${formatWeight(m.pesoGramas)}`}
+                  value={formatBRL(m.total)}
+                  ratio={m.pedidos / maxMaterial}
+                  accent={i === 0}
+                  last={i === d.materiais.length - 1}
+                />
               ))
             )}
           </View>
@@ -193,19 +297,23 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
   },
-  kpiRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 48 },
-  kpiValue: { color: colors.text, fontFamily: fonts.medium },
+  chartPanel: { paddingVertical: spacing.md },
+
+  kpiRowPair: { flexDirection: 'row' },
+  kpi: { flex: 1, paddingVertical: spacing.md, paddingHorizontal: spacing.sm, gap: spacing.xs, minWidth: 0 },
+  kpiDivider: { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: colors.rule, paddingLeft: 0 },
+  kpiValue: { color: colors.text, fontFamily: fonts.semibold, fontSize: 20, lineHeight: 26 },
 
   section: { gap: spacing.sm },
   sectionHead: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, marginTop: spacing.sm },
   sectionTitle: { color: colors.text, fontFamily: fonts.semibold },
-  sectionCount: { color: colors.error, fontFamily: fonts.medium, fontSize: 14 },
+  sectionCount: { color: colors.textMuted, fontFamily: fonts.medium, fontSize: 14 },
 
-  barRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44 },
-  barLabel: { width: 96, color: colors.text },
-  barTrack: { flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.raised, overflow: 'hidden' },
-  barFill: { height: 8, borderRadius: 4 },
-  barValue: { width: 28, textAlign: 'right', color: colors.text },
+  barRow: { paddingVertical: spacing.md, gap: spacing.sm },
+  barHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  barValue: { color: colors.text },
+  barTrack: { height: 6, borderRadius: 3, backgroundColor: colors.raised, overflow: 'hidden' },
+  barFill: { height: 6, borderRadius: 3 },
 
   orderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
   orderRight: { alignItems: 'flex-end', gap: spacing.xs },

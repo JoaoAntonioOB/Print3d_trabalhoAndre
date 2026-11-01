@@ -55,4 +55,23 @@ class Print3dManagerErpApplicationTests extends AbstractIntegrationTest {
         assertThat(status).isEqualTo(5);
         assertThat(atrasados).isGreaterThanOrEqualTo(1);
     }
+
+    @Test
+    @DisplayName("histórico de demonstração (V4) cobre os 5 meses anteriores")
+    void seedHistorico() throws Exception {
+        jdbcTemplate.execute("TRUNCATE pedidos, clientes RESTART IDENTITY CASCADE");
+        try (var conn = java.util.Objects.requireNonNull(jdbcTemplate.getDataSource()).getConnection()) {
+            for (String script : new String[] {"V3__seed_dados_demo.sql", "V4__seed_historico_demo.sql"}) {
+                org.springframework.jdbc.datasource.init.ScriptUtils.executeSqlScript(conn,
+                        new org.springframework.core.io.ClassPathResource("db/migration/" + script));
+            }
+        }
+        Integer meses = jdbcTemplate.queryForObject(
+                "select count(distinct date_trunc('month', criado_em)) from pedidos "
+                        + "where criado_em < date_trunc('month', now())", Integer.class);
+        Integer semCliente = jdbcTemplate.queryForObject(
+                "select count(*) from pedidos where cliente_id is null", Integer.class);
+        assertThat(meses).isEqualTo(5);
+        assertThat(semCliente).isZero();
+    }
 }

@@ -39,7 +39,7 @@ New-NetFirewallRule -DisplayName "Print3D API" -Direction Inbound -Protocol TCP 
 
 ## Testes
 ```powershell
-cd backend; .\mvnw -q test         # 44 testes; requer Docker (Testcontainers)
+cd backend; .\mvnw -q test         # 45 testes; requer Docker (Testcontainers)
 cd ..\mobile; npx tsc --noEmit     # checagem de tipos do app
 ```
 

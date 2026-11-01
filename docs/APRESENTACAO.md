@@ -10,7 +10,7 @@ App mobile (React Native/Expo) que centraliza **clientes, pedidos e indicadores*
 - login seguro (só quem tem conta acessa);
 - cadastro de clientes com **endereço preenchido automaticamente pelo CEP** e **dados da empresa preenchidos pelo CNPJ**;
 - pedidos com **ciclo de status controlado** (Pendente → Em produção → Concluído → Entregue, ou Cancelado);
-- **dashboard** que responde primeiro "o que está na fila e o que está atrasado?", com clientes, faturamento do mês, fila de produção por status (barras) e últimos pedidos.
+- **dashboard** que responde primeiro "o que está na fila e o que está atrasado?" e traz indicadores de gestão: faturamento do mês, ticket médio, valor a receber, material usado, vendas dos últimos 6 meses (gráfico de colunas), fila de produção por status, vencimentos da semana, pedidos atrasados, maiores clientes e uso por material.
 
 ## Arquitetura (BFF)
 ```
@@ -52,7 +52,7 @@ Também nunca bloqueia o cadastro.
 Pré-requisitos: banco e API no ar, celular na mesma rede (ver README). Os dados de exemplo já estão carregados.
 
 1. **Login** — entrar com `demo@print3d.com` / `admin123`. Mostrar antes um erro: senha errada → "E-mail ou senha inválidos." *(valida autenticação e mensagens claras)*.
-2. **Painel** — apresentar o número de pedidos em aberto, o aviso de atrasados, a fila de produção (a barra laranja é o que está sendo impresso agora) e os **pedidos atrasados**. Puxar para atualizar.
+2. **Painel** — apresentar o número de pedidos em aberto e o valor a receber, os indicadores (faturamento do mês, ticket médio, clientes, material usado), o **gráfico de vendas dos últimos 6 meses** (a coluna laranja é o mês atual), a fila de produção, os pedidos que **vencem na semana** e os **atrasados**, e por fim os maiores clientes e o uso por material. Puxar para atualizar.
 3. **Clientes** — abrir a lista, buscar por "Studio". Abrir o **menu lateral** (três barras, canto superior esquerdo) → **Lista de clientes** → botão **Novo**, digitar o CEP `01001-000` e mostrar o endereço preenchendo sozinho. Salvar.
 3b. **CNPJ** — em outro cliente novo, digitar o CNPJ `06.990.590/0001-23`: nome, telefone e endereço completos aparecem sozinhos. Digitar `00.000.000/0001-92` (dígito errado) → mensagem de CNPJ inválido.
 4. **Erro tratado** — tentar um CEP inexistente (`99999-999`): mensagem amigável e cadastro continua possível. Tentar salvar sem nome: campo marcado.
@@ -66,7 +66,7 @@ Pré-requisitos: banco e API no ar, celular na mesma rede (ver README). Os dados
 | Requisito do professor | Como atendemos | Onde ver |
 |---|---|---|
 | Login e autenticação, funcionalidades só para autenticados | Login JWT na API; rotas do app protegidas; logout; 401 derruba a sessão; token no armazenamento seguro | `app/login.tsx`, `AuthContext`, `security/` |
-| Dashboard com indicadores relevantes | Clientes, pedidos abertos, faturamento do mês, atrasados, gráfico por status, últimos pedidos | `app/index.tsx`, `GET /api/dashboard` |
+| Dashboard com indicadores relevantes | 12 blocos de dados: pedidos em aberto e valor a receber, faturamento do mês, ticket médio, clientes, material usado (kg), vendas por mês (gráfico de 6 meses), fila de produção, vencimentos da semana, atrasados, maiores clientes, uso por material, últimos pedidos | `app/index.tsx`, `GET /api/dashboard` |
 | Cadastro, consulta, edição e exclusão | CRUD de **Clientes** e **Pedidos** (busca, filtro por status, paginação) | `app/clients/*`, `app/orders/*` |
 | Integração com API externa | **ViaCEP** (CEP) e **BrasilAPI** (CNPJ) no cadastro de cliente | `cep/*`, `cnpj/*` (API), `clients/form.tsx` |
 | API BFF com regras de negócio e persistência; app sem acesso direto ao banco | Spring Boot + PostgreSQL com Flyway; o app só fala HTTP com a API | `backend/` |
@@ -86,4 +86,4 @@ Pré-requisitos: banco e API no ar, celular na mesma rede (ver README). Os dados
 ## Tecnologias
 **App:** Expo, TypeScript, Expo Router, React Native Paper, TanStack Query, React Hook Form + Zod, axios, expo-secure-store.
 **API:** Java 21, Spring Boot 3.5, Spring Security + JWT, JPA, Flyway, MapStruct, PostgreSQL 16.
-**Testes:** 44 automatizados (unitários das regras de status e dos clientes ViaCEP e BrasilAPI com HTTP simulado; integração com PostgreSQL real via Testcontainers).
+**Testes:** 45 automatizados (unitários das regras de status e dos clientes ViaCEP e BrasilAPI com HTTP simulado; integração com PostgreSQL real via Testcontainers).

@@ -20,6 +20,20 @@ public record DashboardResumoResponse(
         @Schema(description = "Até 5 pedidos atrasados, o mais antigo primeiro")
         List<OrderResponse> pedidosAtrasados,
         @Schema(description = "Últimos 5 pedidos criados")
-        List<OrderResponse> ultimosPedidos
+        List<OrderResponse> ultimosPedidos,
+        @Schema(description = "Valor médio por pedido (exceto cancelados); 0 se não houver pedidos")
+        BigDecimal ticketMedio,
+        @Schema(description = "Soma dos valores dos pedidos PENDENTE + EM_PRODUCAO")
+        BigDecimal valorEmAberto,
+        @Schema(description = "Peso total de material, em gramas, de todos os pedidos (exceto cancelados)")
+        BigDecimal pesoTotalGramas,
+        @Schema(description = "Vendas dos últimos 6 meses, em ordem cronológica (meses sem venda vêm zerados)")
+        List<VendaMensal> vendasMensais,
+        @Schema(description = "Até 5 clientes com maior valor em pedidos (exceto cancelados)")
+        List<ClienteTop> maioresClientes,
+        @Schema(description = "Uso por material, do mais pedido para o menos pedido (exceto cancelados)")
+        List<MaterialUso> materiais,
+        @Schema(description = "Até 5 pedidos em aberto que vencem nos próximos 7 dias (inclui hoje)")
+        List<OrderResponse> proximosVencimentos
 ) {
 }

@@ -90,7 +90,20 @@ class ApiFlowIntegrationTest extends AbstractApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalClientes").value(1))
                 .andExpect(jsonPath("$.pedidosAbertos").value(1))
-                .andExpect(jsonPath("$.ultimosPedidos[0].id").value(pedidoId));
+                .andExpect(jsonPath("$.ultimosPedidos[0].id").value(pedidoId))
+                // indicadores adicionais (um pedido PLA de 120 g e R$ 45,90, criado agora)
+                .andExpect(jsonPath("$.ticketMedio").value(45.9))
+                .andExpect(jsonPath("$.valorEmAberto").value(45.9))
+                .andExpect(jsonPath("$.pesoTotalGramas").value(120))
+                .andExpect(jsonPath("$.vendasMensais.length()").value(6))
+                .andExpect(jsonPath("$.vendasMensais[5].total").value(45.9))
+                .andExpect(jsonPath("$.vendasMensais[5].pedidos").value(1))
+                .andExpect(jsonPath("$.vendasMensais[0].total").value(0))
+                .andExpect(jsonPath("$.maioresClientes[0].nome").value("Maria Silva"))
+                .andExpect(jsonPath("$.maioresClientes[0].pedidos").value(1))
+                .andExpect(jsonPath("$.materiais[0].material").value("PLA"))
+                .andExpect(jsonPath("$.materiais[0].pesoGramas").value(120))
+                .andExpect(jsonPath("$.proximosVencimentos[0].id").value(pedidoId));
     }
 
     @Test
