@@ -67,3 +67,27 @@ export async function deleteClient(id: number): Promise<void> {
 export async function lookupCep(cep: string): Promise<CepResult> {
   return (await http.get<CepResult>(`/cep/${cep}`)).data;
 }
+
+export type CnpjResult = {
+  cnpj: string;
+  razaoSocial: string;
+  nomeFantasia?: string | null;
+  email?: string | null;
+  /** DDD + número, só dígitos */
+  telefone?: string | null;
+  situacao?: string | null;
+  endereco: {
+    cep?: string | null;
+    logradouro?: string | null;
+    numero?: string | null;
+    complemento?: string | null;
+    bairro?: string | null;
+    cidade?: string | null;
+    estado?: string | null;
+  };
+};
+
+/** Segunda API externa (BrasilAPI), sempre via nossa API. */
+export async function lookupCnpj(cnpj: string): Promise<CnpjResult> {
+  return (await http.get<CnpjResult>(`/cnpj/${cnpj}`)).data;
+}

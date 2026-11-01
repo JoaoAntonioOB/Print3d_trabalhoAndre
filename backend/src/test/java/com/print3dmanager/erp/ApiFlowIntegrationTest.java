@@ -175,4 +175,13 @@ class ApiFlowIntegrationTest extends AbstractApiIntegrationTest {
         mockMvc.perform(delete("/orders/" + id).header(HttpHeaders.AUTHORIZATION, auth))
                 .andExpect(status().isNoContent());
     }
+
+    @Test
+    @DisplayName("CNPJ: exige autenticação e rejeita CNPJ inválido com 400 (sem chamar a BrasilAPI)")
+    void cnpj() throws Exception {
+        mockMvc.perform(get("/cnpj/00000000000191")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/cnpj/11111111111111").header(HttpHeaders.AUTHORIZATION, bearer(loginDemo())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("CNPJ inválido")));
+    }
 }

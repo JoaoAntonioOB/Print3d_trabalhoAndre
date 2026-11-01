@@ -14,17 +14,17 @@ App mobile (faculdade) que resolve o controle de clientes e pedidos de pequenas 
 - App: `cd mobile && npx expo start`
 
 ## Escopo (nada além disso)
-Login JWT · Clientes (CRUD + CEP via ViaCEP) · Pedidos (CRUD + status) · Dashboard (`GET /api/dashboard`).
+Login JWT · Clientes (CRUD + CEP via ViaCEP + CNPJ via BrasilAPI) · Pedidos (CRUD + status) · Dashboard (`GET /api/dashboard`).
 
 ## Convenções
-- Package-by-feature em `com.print3dmanager.erp`: `security`, `user`, `client`, `order`, `dashboard`.
+- Package-by-feature em `com.print3dmanager.erp`: `security`, `user`, `client`, `order`, `dashboard`, `cep`, `cnpj`.
 - Schema só por Flyway (`V1` schema, `V2` seed do usuário demo). Valores monetários `numeric(12,2)`.
 - Entidades JPA nunca saem da API: DTOs `record` + MapStruct. Regras de negócio nos services.
 - Erro padrão `{ code, message, fieldErrors[] }`; o app exibe `message` e marca `fieldErrors`.
 - Nomes do domínio em português (tabelas `usuarios`, `clientes`, `pedidos`; campos `nome`, `valor`, `prazo`).
 - Pedido: `PENDENTE → EM_PRODUCAO → CONCLUIDO → ENTREGUE`; `CANCELADO` a partir de PENDENTE/EM_PRODUCAO; só PENDENTE/EM_PRODUCAO são editáveis.
 - Cliente com pedidos não pode ser excluído (409).
-- ViaCEP: o app chama `GET /api/cep/{cep}` na API, nunca a ViaCEP direto; falha externa não bloqueia o cadastro.
+- ViaCEP e BrasilAPI: o app chama `GET /api/cep/{cep}` e `GET /api/cnpj/{cnpj}` na API, nunca os serviços externos direto; falha externa não bloqueia o cadastro.
 
 ## Segurança
 - Dados de clientes (endereço, telefone, e-mail) são sensíveis: sem logs com esses dados.

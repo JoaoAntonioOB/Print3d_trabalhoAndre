@@ -8,7 +8,7 @@ Pequenas empresas de impressão 3D controlam **clientes e pedidos em planilhas e
 ## A solução
 App mobile (React Native/Expo) que centraliza **clientes, pedidos e indicadores**, com:
 - login seguro (só quem tem conta acessa);
-- cadastro de clientes com **endereço preenchido automaticamente pelo CEP**;
+- cadastro de clientes com **endereço preenchido automaticamente pelo CEP** e **dados da empresa preenchidos pelo CNPJ**;
 - pedidos com **ciclo de status controlado** (Pendente → Em produção → Concluído → Entregue, ou Cancelado);
 - **dashboard** com clientes, pedidos abertos, faturamento do mês, pedidos atrasados e gráfico por status.
 
@@ -36,12 +36,25 @@ App (Expo/React Native) ──HTTPS/JSON + JWT──▶ API BFF (Spring Boot) �
 
 A falha da API externa **nunca bloqueia o cadastro**.
 
+## Segunda integração: BrasilAPI (CNPJ)
+Para clientes empresa, ao digitar os 14 dígitos do CNPJ o app chama `GET /api/cnpj/{cnpj}` **na nossa API**, que valida o formato e os **dígitos verificadores** antes de consultar `brasilapi.com.br` (timeout 4 s, com cache). O app preenche nome (fantasia ou razão social), e-mail, telefone e endereço — **só os campos que ainda estão vazios** — e avisa se a situação cadastral não for ATIVA.
+
+| Situação | Resposta da API | O que o usuário vê |
+|---|---|---|
+| CNPJ válido | 200 | dados preenchidos + "Confira antes de salvar" |
+| CNPJ inválido (formato ou dígito verificador) | 400 | "CNPJ inválido: confira os 14 dígitos." (sem chamar a BrasilAPI) |
+| CNPJ inexistente | 404 | "CNPJ não encontrado, preencha manualmente." |
+| BrasilAPI fora do ar, limite (429) ou timeout | 503 | "Serviço de consulta de CNPJ indisponível, preencha manualmente." |
+
+Também nunca bloqueia o cadastro.
+
 ## Roteiro da demonstração (≈ 5 min)
 Pré-requisitos: banco e API no ar, celular na mesma rede (ver README). Os dados de exemplo já estão carregados.
 
 1. **Login** — entrar com `demo@print3d.com` / `admin123`. Mostrar antes um erro: senha errada → "E-mail ou senha inválidos." *(valida autenticação e mensagens claras)*.
 2. **Dashboard** — apresentar os cards, o gráfico por status e os **2 pedidos atrasados** em destaque. Puxar para atualizar.
 3. **Clientes** — abrir a lista, buscar por "Studio". Tocar em **Novo cliente**, digitar o CEP `01001-000` e mostrar o endereço preenchendo sozinho. Salvar.
+3b. **CNPJ** — em outro cliente novo, digitar o CNPJ `06.990.590/0001-23`: nome, telefone e endereço completos aparecem sozinhos. Digitar `00.000.000/0001-92` (dígito errado) → mensagem de CNPJ inválido.
 4. **Erro tratado** — tentar um CEP inexistente (`99999-999`): mensagem amigável e cadastro continua possível. Tentar salvar sem nome: campo marcado.
 5. **Pedido** — no cliente recém-criado, **Novo pedido** (material PLA, peso `120,5`, valor `45,90`, prazo futuro). Tentar prazo no passado → erro no campo.
 6. **Status** — no detalhe, avançar *Iniciar produção → Concluído → Entregue*; mostrar que só aparecem as transições válidas e que **cancelar** pede confirmação. Pedido entregue não pode mais ser alterado.
@@ -55,7 +68,7 @@ Pré-requisitos: banco e API no ar, celular na mesma rede (ver README). Os dados
 | Login e autenticação, funcionalidades só para autenticados | Login JWT na API; rotas do app protegidas; logout; 401 derruba a sessão; token no armazenamento seguro | `app/login.tsx`, `AuthContext`, `security/` |
 | Dashboard com indicadores relevantes | Clientes, pedidos abertos, faturamento do mês, atrasados, gráfico por status, últimos pedidos | `app/index.tsx`, `GET /api/dashboard` |
 | Cadastro, consulta, edição e exclusão | CRUD de **Clientes** e **Pedidos** (busca, filtro por status, paginação) | `app/clients/*`, `app/orders/*` |
-| Integração com API externa | **ViaCEP** no cadastro de cliente | `cep/*` (API), `clients/form.tsx` |
+| Integração com API externa | **ViaCEP** (CEP) e **BrasilAPI** (CNPJ) no cadastro de cliente | `cep/*`, `cnpj/*` (API), `clients/form.tsx` |
 | API BFF com regras de negócio e persistência; app sem acesso direto ao banco | Spring Boot + PostgreSQL com Flyway; o app só fala HTTP com a API | `backend/` |
 | Fluxo completo, validação de campos, tratamento de erros, mensagens claras | Zod no app + Bean Validation na API + erro padrão `{code, message, fieldErrors[]}`; estados de carregando, vazio e erro | todas as telas |
 | Apresentação (demo, integrações, aderência ao problema) | Este documento | — |
@@ -73,4 +86,4 @@ Pré-requisitos: banco e API no ar, celular na mesma rede (ver README). Os dados
 ## Tecnologias
 **App:** Expo, TypeScript, Expo Router, React Native Paper, TanStack Query, React Hook Form + Zod, axios, expo-secure-store, react-native-gifted-charts.
 **API:** Java 21, Spring Boot 3.5, Spring Security + JWT, JPA, Flyway, MapStruct, PostgreSQL 16.
-**Testes:** 36 automatizados (unitários das regras de status e do cliente ViaCEP com HTTP simulado; integração com PostgreSQL real via Testcontainers).
+**Testes:** 44 automatizados (unitários das regras de status e dos clientes ViaCEP e BrasilAPI com HTTP simulado; integração com PostgreSQL real via Testcontainers).

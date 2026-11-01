@@ -2,7 +2,7 @@
 
 App mobile (React Native/Expo) para donos e operadores de pequenas empresas de impressão 3D controlarem **clientes, pedidos e indicadores** em um só lugar, substituindo planilhas e WhatsApp.
 
-- `backend/` — API (BFF) Spring Boot: autenticação JWT, regras de negócio, persistência e integração com a ViaCEP.
+- `backend/` — API (BFF) Spring Boot: autenticação JWT, regras de negócio, persistência e integração com ViaCEP e BrasilAPI.
 - `mobile/` — app Expo (React Native + TypeScript).
 - `docs/` — progresso, specs por marco e [roteiro de apresentação](docs/APRESENTACAO.md).
 
@@ -39,12 +39,12 @@ New-NetFirewallRule -DisplayName "Print3D API" -Direction Inbound -Protocol TCP 
 
 ## Testes
 ```powershell
-cd backend; .\mvnw -q test         # 36 testes; requer Docker (Testcontainers)
+cd backend; .\mvnw -q test         # 44 testes; requer Docker (Testcontainers)
 cd ..\mobile; npx tsc --noEmit     # checagem de tipos do app
 ```
 
 ## Endpoints
-`POST /api/auth/login` · `GET|POST /api/clients` · `GET|PUT|DELETE /api/clients/{id}` · `GET|POST /api/orders` · `GET|PUT|DELETE /api/orders/{id}` · `PATCH /api/orders/{id}/status` · `GET /api/cep/{cep}` · `GET /api/dashboard`
+`POST /api/auth/login` · `GET|POST /api/clients` · `GET|PUT|DELETE /api/clients/{id}` · `GET|POST /api/orders` · `GET|PUT|DELETE /api/orders/{id}` · `PATCH /api/orders/{id}/status` · `GET /api/cep/{cep}` · `GET /api/cnpj/{cnpj}` · `GET /api/dashboard`
 
 Erros seguem `{ "code", "message", "fieldErrors": [{ "field", "message" }] }`.
 

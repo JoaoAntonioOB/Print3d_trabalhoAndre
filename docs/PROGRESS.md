@@ -7,12 +7,13 @@
 - **Marco 3 — Pedidos:** CRUD com seletor de cliente em tela cheia, filtro por status, transições válidas, cancelamento com confirmação. Validado no iPhone.
 - **Marco 4 — Dashboard:** cards, gráfico por status, atrasados, últimos pedidos, pull-to-refresh.
 - **Revisão de layout:** área segura, chips/FAB/gráfico corrigidos, ícones em todo o app, largura máxima em telas grandes.
-- **Marco 5 — Fechamento:** seed de demonstração (`V3`: 6 clientes, 12 pedidos em todos os status, 2 atrasados), limites numéricos (`@Digits`) para evitar erro 500, Swagger desligado em `prod`, roteiro e matriz em `docs/APRESENTACAO.md`, README completo. 36 testes passando.
+- **Marco 5 — Fechamento:** seed de demonstração (`V3`: 6 clientes, 12 pedidos em todos os status, 2 atrasados), limites numéricos (`@Digits`) para evitar erro 500, Swagger desligado em `prod`, roteiro e matriz em `docs/APRESENTACAO.md`, README completo. 44 testes passando (após o Marco 6).
+
+- **Marco 6 — CNPJ (BrasilAPI):** `GET /api/cnpj/{cnpj}` (valida dígitos verificadores, 400/404/503, cache, timeout 4 s, testes com HTTP simulado; conferido contra a BrasilAPI real) e preenchimento automático no cadastro de cliente (só campos vazios). 44 testes passando.
 
 ## Pendências / opcionais
 - Renomear `backend/` → `api/` (a pasta estava travada pela IDE); ajustar caminhos nos docs e no CI.
 - Validar o layout revisado e o Marco 4/5 no iPhone (a revisão visual não pôde ser feita pelo assistente).
-- Marco 6 (opcional): segunda API externa (BrasilAPI/CNPJ).
 - Hospedagem da API e do banco para a apresentação (ver README, seção Produção).
 
 ## Decisões

@@ -6,7 +6,7 @@ import { Controller, useForm, type Control, type FieldPath } from 'react-hook-fo
 import { StyleSheet, View } from 'react-native';
 import { Button, HelperText, Icon, Text, TextInput } from 'react-native-paper';
 import { z } from 'zod';
-import { createClient, getClient, lookupCep, updateClient, type Client, type ClientInput } from '../../src/api/clients';
+import { createClient, getClient, lookupCep, lookupCnpj, updateClient, type Client, type ClientInput } from '../../src/api/clients';
 import { toApiError } from '../../src/api/http';
 import { FormScroll } from '../../src/components/FormScroll';
 import { LoadingState } from '../../src/components/ScreenState';
@@ -111,6 +111,9 @@ export default function ClientForm() {
   const queryClient = useQueryClient();
   const numeroRef = useRef<InputHandle>(null);
   const lastCep = useRef('');
+  const lastCnpj = useRef('');
+  const [cnpjLoading, setCnpjLoading] = useState(false);
+  const [cnpjMessage, setCnpjMessage] = useState<{ text: string; warn: boolean } | null>(null);
   const [cepLoading, setCepLoading] = useState(false);
   const [cepMessage, setCepMessage] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -121,13 +124,14 @@ export default function ClientForm() {
     enabled: editingId !== undefined,
   });
 
-  const { control, handleSubmit, reset, setValue, setError, formState: { errors, isSubmitting } } =
+  const { control, handleSubmit, reset, setValue, getValues, setError, formState: { errors, isSubmitting } } =
     useForm<FormData>({ resolver: zodResolver(schema), defaultValues: EMPTY });
 
   useEffect(() => {
     if (existing.data) {
       reset(fromClient(existing.data));
       lastCep.current = onlyDigits(existing.data.endereco?.cep ?? '');
+      lastCnpj.current = onlyDigits(existing.data.cpfCnpj ?? '');
     }
   }, [existing.data, reset]);
 
@@ -165,6 +169,50 @@ export default function ClientForm() {
     }
   };
 
+  // CNPJ completo (14 dígitos) -> consulta a API (que consulta a BrasilAPI) e preenche só o que estiver vazio.
+  // Falha nunca bloqueia o cadastro.
+  const onCpfCnpjChange = async (masked: string) => {
+    const digits = onlyDigits(masked);
+    setCnpjMessage(null);
+    if (digits.length !== 14 || digits === lastCnpj.current) return;
+    lastCnpj.current = digits;
+    setCnpjLoading(true);
+    try {
+      const r = await lookupCnpj(digits);
+      const fill = (name: Name, value?: string | null) => {
+        if (value && !getValues(name).trim()) setValue(name, value, { shouldValidate: true });
+      };
+      fill('nome', r.nomeFantasia || r.razaoSocial);
+      fill('email', r.email);
+      const phone = onlyDigits(r.telefone ?? '');
+      if (phone.length === 10 || phone.length === 11) fill('telefone', maskPhone(phone));
+      const e = r.endereco;
+      const cepDigits = onlyDigits(e.cep ?? '');
+      if (cepDigits.length === 8) {
+        if (!getValues('cep').trim()) lastCep.current = cepDigits; // evita nova consulta de CEP
+        fill('cep', maskCep(cepDigits));
+      }
+      fill('logradouro', e.logradouro);
+      fill('numero', e.numero);
+      fill('complemento', e.complemento);
+      fill('bairro', e.bairro);
+      fill('cidade', e.cidade);
+      fill('estado', e.estado?.toUpperCase());
+      const inactive = r.situacao && r.situacao.toUpperCase() !== 'ATIVA';
+      setCnpjMessage({
+        text: inactive
+          ? `Atenção: situação cadastral ${r.situacao}. Dados preenchidos, confira antes de salvar.`
+          : 'Dados da empresa preenchidos. Confira antes de salvar.',
+        warn: !!inactive,
+      });
+    } catch (err) {
+      lastCnpj.current = '';
+      setCnpjMessage({ text: toApiError(err).message, warn: true });
+    } finally {
+      setCnpjLoading(false);
+    }
+  };
+
   const submit = handleSubmit(async (data) => {
     setServerError(null);
     try {
@@ -191,7 +239,20 @@ export default function ClientForm() {
         <Field control={control} name="nome" label="Nome *" icon="account-outline" error={msg('nome')} autoCapitalize="words" />
         <Field control={control} name="telefone" label="Telefone" icon="phone-outline" error={msg('telefone')} mask={maskPhone} keyboardType="phone-pad" />
         <Field control={control} name="email" label="E-mail" icon="email-outline" error={msg('email')} autoCapitalize="none" keyboardType="email-address" />
-        <Field control={control} name="cpfCnpj" label="CPF/CNPJ" icon="card-account-details-outline" error={msg('cpfCnpj')} mask={maskCpfCnpj} keyboardType="number-pad" />
+        <Field
+          control={control}
+          name="cpfCnpj"
+          label="CPF/CNPJ"
+          icon="card-account-details-outline"
+          error={msg('cpfCnpj')}
+          mask={maskCpfCnpj}
+          keyboardType="number-pad"
+          onChangeExtra={(v) => void onCpfCnpjChange(v)}
+          right={cnpjLoading ? <TextInput.Icon icon="loading" /> : undefined}
+        />
+        <HelperText type={cnpjMessage?.warn ? 'error' : 'info'} visible={!!cnpjMessage} style={styles.cepMessage}>
+          {cnpjMessage?.text}
+        </HelperText>
 
         <View style={styles.sectionRow}>
           <Icon source="map-marker-radius-outline" size={20} color={colors.primary} />
