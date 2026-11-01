@@ -19,6 +19,9 @@ export default function Home() {
       <Button mode="contained" icon="account-group-outline" onPress={() => router.push('/clients')} style={styles.button}>
         Clientes
       </Button>
+      <Button mode="contained" icon="clipboard-list-outline" onPress={() => router.push('/orders')} style={styles.button}>
+        Pedidos
+      </Button>
       <Button mode="outlined" onPress={() => void signOut()} style={styles.button}>
         Sair
       </Button>

@@ -20,4 +20,4 @@ export const paperTheme = {
   },
 };
 
-export { colors, spacing, radius } from './tokens';
+export { colors, spacing, radius, statusColors } from './tokens';

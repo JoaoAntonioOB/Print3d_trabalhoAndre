@@ -28,6 +28,9 @@ function RootStack() {
         <Stack.Screen name="clients/index" options={{ headerShown: true, title: 'Clientes' }} />
         <Stack.Screen name="clients/[id]" options={{ headerShown: true, title: 'Cliente' }} />
         <Stack.Screen name="clients/form" options={{ headerShown: true, title: 'Cliente' }} />
+        <Stack.Screen name="orders/index" options={{ headerShown: true, title: 'Pedidos' }} />
+        <Stack.Screen name="orders/[id]" options={{ headerShown: true, title: 'Pedido' }} />
+        <Stack.Screen name="orders/form" options={{ headerShown: true, title: 'Pedido' }} />
       </Stack.Protected>
     </Stack>
   );

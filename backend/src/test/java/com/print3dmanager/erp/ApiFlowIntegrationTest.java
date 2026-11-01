@@ -9,13 +9,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.print3dmanager.erp.testsupport.AbstractApiIntegrationTest;
 import java.time.LocalDate;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.MediaType;
 
 /** Fluxo completo pela API: login, cliente, pedido, dashboard e regras de erro. */
 class ApiFlowIntegrationTest extends AbstractApiIntegrationTest {
+
+    @Autowired
+    private JdbcTemplate jdbc;
+
+    @BeforeEach
+    void limparDados() {
+        jdbc.execute("TRUNCATE pedidos, clientes RESTART IDENTITY CASCADE");
+    }
 
     @Test
     @DisplayName("login com senha errada devolve 401 no formato padrão")
@@ -124,5 +135,44 @@ class ApiFlowIntegrationTest extends AbstractApiIntegrationTest {
                 .andExpect(status().isNoContent());
         mockMvc.perform(get("/clients/" + id).header(HttpHeaders.AUTHORIZATION, auth))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("pedido: edita enquanto aberto, filtra por status, cancela e depois só pode excluir")
+    void ciclaPedido() throws Exception {
+        String auth = bearer(loginDemo());
+        long clienteId = objectMapper.readTree(mockMvc.perform(post("/clients")
+                        .header(HttpHeaders.AUTHORIZATION, auth).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Cliente Ciclo\"}"))
+                .andReturn().getResponse().getContentAsString()).get("id").asLong();
+        String corpo = "{\"clienteId\":%d,\"descricao\":\"Engrenagem\",\"material\":\"petg\","
+                .formatted(clienteId) + "\"pesoGramas\":80.5,\"valor\":30,\"prazo\":\""
+                + LocalDate.now().plusDays(3) + "\"}";
+        long id = objectMapper.readTree(mockMvc.perform(post("/orders")
+                        .header(HttpHeaders.AUTHORIZATION, auth).contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/orders/" + id)
+                        .header(HttpHeaders.AUTHORIZATION, auth).contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo.replace("\"valor\":30", "\"valor\":99.9")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valor").value(99.9));
+
+        mockMvc.perform(get("/orders").param("status", "PENDENTE").param("busca", "engrenagem")
+                        .header(HttpHeaders.AUTHORIZATION, auth))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(id));
+
+        mockMvc.perform(patch("/orders/" + id + "/status").header(HttpHeaders.AUTHORIZATION, auth)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"CANCELADO\"}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/orders/" + id)
+                        .header(HttpHeaders.AUTHORIZATION, auth).contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(delete("/orders/" + id).header(HttpHeaders.AUTHORIZATION, auth))
+                .andExpect(status().isNoContent());
     }
 }

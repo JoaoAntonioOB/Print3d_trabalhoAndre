@@ -65,6 +65,14 @@ export default function ClientDetail() {
       <View style={styles.actions}>
         <Button
           mode="contained"
+          icon="clipboard-plus-outline"
+          onPress={() => router.push({ pathname: '/orders/form', params: { clienteId: String(c.id) } })}
+          style={styles.secondary}
+        >
+          Novo pedido
+        </Button>
+        <Button
+          mode="outlined"
           icon="pencil"
           onPress={() => router.push({ pathname: '/clients/form', params: { id: String(c.id) } })}
         >
@@ -91,5 +99,6 @@ const styles = StyleSheet.create({
   content: { padding: spacing.md },
   card: { backgroundColor: colors.surface, borderRadius: 10, marginTop: 0 },
   actions: { marginTop: spacing.lg },
+  secondary: { marginBottom: spacing.sm },
   delete: { marginTop: spacing.sm, borderColor: colors.error },
 });
