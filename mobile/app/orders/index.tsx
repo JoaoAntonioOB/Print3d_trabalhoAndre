@@ -2,7 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Chip, FAB, Icon, Searchbar, Text } from 'react-native-paper';
+import { ActivityIndicator, Chip, Icon, Searchbar, Text } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { listOrders, ORDER_STATUSES, STATUS_ICON, STATUS_LABEL, isOpen, type OrderStatus } from '../../src/api/orders';
 import { toApiError } from '../../src/api/http';
@@ -64,7 +64,7 @@ export default function OrdersList() {
         onEndReached={() => query.hasNextPage && !query.isFetchingNextPage && void query.fetchNextPage()}
         onEndReachedThreshold={0.4}
         ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator style={styles.footer} /> : undefined}
-        contentContainerStyle={[layout.content, styles.listContent, { paddingBottom: 96 + bottom }]}
+        contentContainerStyle={[layout.content, styles.listContent, { paddingBottom: spacing.xl + bottom }]}
         renderItem={({ item }) => {
           const late = isOpen(item.status) && item.prazo < today;
           return (
@@ -114,7 +114,6 @@ export default function OrdersList() {
         ))}
       </ScrollView>
       {body}
-      <FAB color={colors.onPrimary} icon="plus" label="Novo pedido" style={[styles.fab, { bottom: spacing.md + bottom }]} onPress={() => router.push('/orders/form')} />
     </View>
   );
 }
@@ -137,5 +136,4 @@ const styles = StyleSheet.create({
   muted: { color: colors.textMuted },
   late: { color: colors.error, fontWeight: '600' },
   footer: { margin: spacing.md },
-  fab: { position: 'absolute', right: spacing.md, backgroundColor: colors.primary },
 });

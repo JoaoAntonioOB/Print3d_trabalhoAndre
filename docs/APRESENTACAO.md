@@ -53,10 +53,10 @@ Pré-requisitos: banco e API no ar, celular na mesma rede (ver README). Os dados
 
 1. **Login** — entrar com `demo@print3d.com` / `admin123`. Mostrar antes um erro: senha errada → "E-mail ou senha inválidos." *(valida autenticação e mensagens claras)*.
 2. **Dashboard** — apresentar os cards, o gráfico por status e os **2 pedidos atrasados** em destaque. Puxar para atualizar.
-3. **Clientes** — abrir a lista, buscar por "Studio". Tocar em **Novo cliente**, digitar o CEP `01001-000` e mostrar o endereço preenchendo sozinho. Salvar.
+3. **Clientes** — abrir a lista, buscar por "Studio". Abrir o **menu lateral** (três barras, canto superior esquerdo) → **Cadastrar cliente**, digitar o CEP `01001-000` e mostrar o endereço preenchendo sozinho. Salvar.
 3b. **CNPJ** — em outro cliente novo, digitar o CNPJ `06.990.590/0001-23`: nome, telefone e endereço completos aparecem sozinhos. Digitar `00.000.000/0001-92` (dígito errado) → mensagem de CNPJ inválido.
 4. **Erro tratado** — tentar um CEP inexistente (`99999-999`): mensagem amigável e cadastro continua possível. Tentar salvar sem nome: campo marcado.
-5. **Pedido** — no cliente recém-criado, **Novo pedido** (material PLA, peso `120,5`, valor `45,90`, prazo futuro). Tentar prazo no passado → erro no campo.
+5. **Pedido** — no cliente recém-criado, menu lateral → **Cadastrar pedido** (ou o botão **Novo pedido** no detalhe do cliente) (material PLA, peso `120,5`, valor `45,90`, prazo futuro). Tentar prazo no passado → erro no campo.
 6. **Status** — no detalhe, avançar *Iniciar produção → Concluído → Entregue*; mostrar que só aparecem as transições válidas e que **cancelar** pede confirmação. Pedido entregue não pode mais ser alterado.
 7. **Regra de negócio** — tentar excluir um cliente que tem pedidos → "Não é possível excluir o cliente X: ele possui pedidos." (409).
 8. **Volta ao dashboard** — os números e o gráfico mudaram. **Sair** → volta ao login; sem token as rotas não abrem.

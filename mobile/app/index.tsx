@@ -2,13 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
-import { Button, Icon, IconButton, Text } from 'react-native-paper';
+import { Icon, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getDashboard } from '../src/api/dashboard';
 import { toApiError } from '../src/api/http';
 import { ORDER_STATUSES, STATUS_LABEL, type Order } from '../src/api/orders';
 import { useAuth } from '../src/auth/AuthContext';
 import { ErrorState, LoadingState } from '../src/components/ScreenState';
+import { MenuButton } from '../src/components/SideMenu';
 import { StatusChip } from '../src/components/StatusChip';
 import { colors, layout, radius, spacing, statusColors } from '../src/theme';
 import { formatBRL, isoToBr } from '../src/utils/format';
@@ -62,7 +63,7 @@ function OrderRow({ order, onPress }: { order: Order; onPress: () => void }) {
 }
 
 export default function Dashboard() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const { width } = useWindowDimensions();
 
@@ -95,11 +96,11 @@ export default function Dashboard() {
       refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} />}
     >
       <View style={styles.header}>
+        <MenuButton />
         <View style={styles.flex}>
           <Text variant="bodyMedium" style={styles.muted}>Olá,</Text>
           <Text variant="headlineSmall" style={styles.title} numberOfLines={1}>{user?.nome}</Text>
         </View>
-        <IconButton icon="logout" accessibilityLabel="Sair" onPress={() => void signOut()} />
       </View>
 
       <View style={styles.statsRow}>
@@ -171,14 +172,6 @@ export default function Dashboard() {
         )}
       </View>
 
-      <View style={styles.actions}>
-        <Button mode="contained" icon="clipboard-plus-outline" onPress={() => router.push('/orders/form')}>
-          Novo pedido
-        </Button>
-        <Button mode="outlined" icon="account-plus-outline" onPress={() => router.push('/clients/form')} style={styles.second}>
-          Novo cliente
-        </Button>
-      </View>
     </ScrollView>
     </SafeAreaView>
   );
@@ -192,7 +185,7 @@ const styles = StyleSheet.create({
   sectionText: { color: colors.text, fontWeight: '600' },
   emptyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   statIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.md, marginLeft: -spacing.sm },
   title: { color: colors.primary, fontWeight: '700' },
   text: { color: colors.text },
   muted: { color: colors.textMuted },
@@ -209,6 +202,4 @@ const styles = StyleSheet.create({
   dot: { width: 10, height: 10, borderRadius: 5, marginRight: spacing.xs },
   orderRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, gap: spacing.sm },
   orderRight: { alignItems: 'flex-end', gap: spacing.xs },
-  actions: { marginTop: spacing.lg },
-  second: { marginTop: spacing.sm },
 });

@@ -11,6 +11,8 @@
 
 - **Marco 6 — CNPJ (BrasilAPI):** `GET /api/cnpj/{cnpj}` (valida dígitos verificadores, 400/404/503, cache, timeout 4 s, testes com HTTP simulado; conferido contra a BrasilAPI real) e preenchimento automático no cadastro de cliente (só campos vazios). 44 testes passando.
 
+- **Menu lateral + ícones:** menu deslizante pelas três barras (Início, lista/cadastro de clientes e de pedidos, Sair) no lugar dos botões flutuantes; ícones corrigidos instalando `@expo/vector-icons` (antes o Paper caía num pacote com fontes nativas que não existem no Expo Go, e os ícones viravam um quadrado com "?"). `react-dom` fixado em 19.3.0 via `overrides` no `package.json`, porque o `npm install` quebrava com o patch 19.3.1.
+
 ## Pendências / opcionais
 - Renomear `backend/` → `api/` (a pasta estava travada pela IDE); ajustar caminhos nos docs e no CI.
 - Validar o layout revisado e o Marco 4/5 no iPhone (a revisão visual não pôde ser feita pelo assistente).

@@ -2,7 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, FAB, List, Searchbar } from 'react-native-paper';
+import { ActivityIndicator, List, Searchbar } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toApiError } from '../../src/api/http';
 import { listClients } from '../../src/api/clients';
@@ -60,7 +60,7 @@ export default function ClientsList() {
         onEndReached={() => query.hasNextPage && !query.isFetchingNextPage && void query.fetchNextPage()}
         onEndReachedThreshold={0.4}
         ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator style={styles.footer} /> : undefined}
-        contentContainerStyle={[layout.content, { paddingBottom: 96 + bottom }]}
+        contentContainerStyle={[layout.content, { paddingBottom: spacing.xl + bottom }]}
         renderItem={({ item }) => (
           <List.Item
             title={item.nome}
@@ -84,7 +84,6 @@ export default function ClientsList() {
         style={styles.search}
       />
       {body}
-      <FAB color={colors.onPrimary} icon="account-plus-outline" label="Novo cliente" style={[styles.fab, { bottom: spacing.md + bottom }]} onPress={() => router.push('/clients/form')} />
     </View>
   );
 }
@@ -94,5 +93,4 @@ const styles = StyleSheet.create({
   search: { margin: spacing.md, backgroundColor: colors.surface },
   item: { backgroundColor: colors.surface, marginHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: 10 },
   footer: { margin: spacing.md },
-  fab: { position: 'absolute', right: spacing.md, backgroundColor: colors.primary },
 });
