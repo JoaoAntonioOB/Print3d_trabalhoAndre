@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm, type Control, type FieldPath } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, HelperText, Text, TextInput } from 'react-native-paper';
 import { z } from 'zod';
 import { createClient, getClient, lookupCep, updateClient, type Client, type ClientInput } from '../../src/api/clients';
@@ -181,9 +181,15 @@ export default function ClientForm() {
   const msg = (n: Name) => errors[n]?.message;
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <>
       <Stack.Screen options={{ title: editingId !== undefined ? 'Editar cliente' : 'Novo cliente' }} />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        contentInsetAdjustmentBehavior="automatic"
+        automaticallyAdjustKeyboardInsets
+      >
         <Field control={control} name="nome" label="Nome *" error={msg('nome')} autoCapitalize="words" />
         <Field control={control} name="telefone" label="Telefone" error={msg('telefone')} mask={maskPhone} keyboardType="phone-pad" />
         <Field control={control} name="email" label="E-mail" error={msg('email')} autoCapitalize="none" keyboardType="email-address" />
@@ -213,7 +219,7 @@ export default function ClientForm() {
           {editingId !== undefined ? 'Salvar alterações' : 'Cadastrar'}
         </Button>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </>
   );
 }
 
