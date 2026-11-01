@@ -6,6 +6,7 @@ import { deleteClient, getClient } from '../../src/api/clients';
 import { toApiError } from '../../src/api/http';
 import { ErrorState, LoadingState } from '../../src/components/ScreenState';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Screen } from '../../src/components/Screen';
 import { colors, layout, spacing } from '../../src/theme';
 
 export default function ClientDetail() {
@@ -35,9 +36,11 @@ export default function ClientDetail() {
       { text: 'Excluir', style: 'destructive', onPress: () => remove.mutate() },
     ]);
 
-  if (query.isPending) return <LoadingState />;
+  const frame = (node: React.ReactNode) => <Screen title="Cliente" back>{node}</Screen>;
+
+  if (query.isPending) return frame(<LoadingState />);
   if (query.isError) {
-    return <ErrorState message={toApiError(query.error).message} onRetry={() => void query.refetch()} />;
+    return frame(<ErrorState message={toApiError(query.error).message} onRetry={() => void query.refetch()} />);
   }
 
   const c = query.data;
@@ -45,7 +48,7 @@ export default function ClientDetail() {
   const rua = [e?.logradouro, e?.numero].filter(Boolean).join(', ') + (e?.complemento ? ` – ${e.complemento}` : '');
   const cidade = [e?.bairro, [e?.cidade, e?.estado].filter(Boolean).join('/')].filter(Boolean).join(' · ');
 
-  return (
+  return frame(
     <ScrollView style={styles.container} contentContainerStyle={[layout.content, styles.content, { paddingBottom: spacing.xl + bottom }]}>
       <List.Section style={styles.card}>
         <List.Item title={c.nome} description="Nome" left={(p) => <List.Icon {...p} icon="account-outline" />} />
@@ -93,7 +96,7 @@ export default function ClientDetail() {
           Excluir
         </Button>
       </View>
-    </ScrollView>
+    </ScrollView>,
   );
 }
 

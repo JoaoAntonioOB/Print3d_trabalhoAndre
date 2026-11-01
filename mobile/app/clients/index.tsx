@@ -2,11 +2,12 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, List, Searchbar } from 'react-native-paper';
+import { ActivityIndicator, Button, List, Searchbar } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toApiError } from '../../src/api/http';
 import { listClients } from '../../src/api/clients';
 import { EmptyState, ErrorState, LoadingState } from '../../src/components/ScreenState';
+import { Screen } from '../../src/components/Screen';
 import { colors, layout, spacing } from '../../src/theme';
 
 export default function ClientsList() {
@@ -76,21 +77,24 @@ export default function ClientsList() {
   }
 
   return (
-    <View style={styles.container}>
-      <Searchbar
-        placeholder="Buscar por nome, e-mail ou CPF/CNPJ"
-        value={search}
-        onChangeText={setSearch}
-        style={styles.search}
-      />
+    <Screen title="Clientes" menu>
+      <View style={styles.searchRow}>
+        <Searchbar placeholder="Buscar cliente" value={search} onChangeText={setSearch} style={styles.search} />
+        <Button mode="contained" icon="plus" onPress={() => router.push('/clients/form')} style={styles.newButton} contentStyle={styles.newContent}>
+          Novo
+        </Button>
+      </View>
       {body}
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  search: { margin: spacing.md, backgroundColor: colors.surface },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
+  search: { flex: 1, backgroundColor: colors.surface },
+  newButton: { borderRadius: 28 },
+  newContent: { height: 48 },
   item: { backgroundColor: colors.surface, marginHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: 10 },
   footer: { margin: spacing.md },
 });

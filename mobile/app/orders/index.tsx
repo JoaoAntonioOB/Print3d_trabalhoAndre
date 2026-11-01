@@ -2,12 +2,13 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Chip, Icon, Searchbar, Text } from 'react-native-paper';
+import { ActivityIndicator, Button, Chip, Icon, Searchbar, Text } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { listOrders, ORDER_STATUSES, STATUS_ICON, STATUS_LABEL, isOpen, type OrderStatus } from '../../src/api/orders';
 import { toApiError } from '../../src/api/http';
 import { EmptyState, ErrorState, LoadingState } from '../../src/components/ScreenState';
 import { StatusChip } from '../../src/components/StatusChip';
+import { Screen } from '../../src/components/Screen';
 import { colors, layout, radius, spacing } from '../../src/theme';
 import { formatBRL, isoToBr, todayIso } from '../../src/utils/format';
 
@@ -98,8 +99,13 @@ export default function OrdersList() {
   }
 
   return (
-    <View style={styles.container}>
-      <Searchbar placeholder="Buscar por descrição ou cliente" value={search} onChangeText={setSearch} style={styles.search} />
+    <Screen title="Pedidos" menu>
+      <View style={styles.searchRow}>
+        <Searchbar placeholder="Buscar pedido" value={search} onChangeText={setSearch} style={styles.search} />
+        <Button mode="contained" icon="plus" onPress={() => router.push('/orders/form')} style={styles.newButton} contentStyle={styles.newContent}>
+          Novo
+        </Button>
+      </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -114,13 +120,16 @@ export default function OrdersList() {
         ))}
       </ScrollView>
       {body}
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  search: { margin: spacing.md, marginBottom: spacing.sm, backgroundColor: colors.surface },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, paddingBottom: spacing.sm },
+  search: { flex: 1, backgroundColor: colors.surface },
+  newButton: { borderRadius: 28 },
+  newContent: { height: 48 },
   filtersScroll: { flexGrow: 0, flexShrink: 0 },
   filters: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
   flex: { flex: 1 },

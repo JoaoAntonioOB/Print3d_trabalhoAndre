@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { PaperProvider } from 'react-native-paper';
 import { AuthProvider, useAuth } from '../src/auth/AuthContext';
-import { MenuButton, MenuProvider } from '../src/components/SideMenu';
+import { MenuProvider } from '../src/components/SideMenu';
 import { colors, paperTheme } from '../src/theme';
 
 function RootStack() {
@@ -28,19 +28,13 @@ function RootStack() {
       </Stack.Protected>
       <Stack.Protected guard={!!user}>
         <Stack.Screen name="index" />
-        <Stack.Screen
-          name="clients/index"
-          options={{ headerShown: true, title: 'Clientes', headerLeft: () => <MenuButton /> }}
-        />
-        <Stack.Screen name="clients/[id]" options={{ headerShown: true, title: 'Cliente' }} />
-        <Stack.Screen name="clients/form" options={{ headerShown: true, title: 'Cliente' }} />
-        <Stack.Screen
-          name="orders/index"
-          options={{ headerShown: true, title: 'Pedidos', headerLeft: () => <MenuButton /> }}
-        />
-        <Stack.Screen name="orders/[id]" options={{ headerShown: true, title: 'Pedido' }} />
-        <Stack.Screen name="orders/form" options={{ headerShown: true, title: 'Pedido' }} />
-        <Stack.Screen name="orders/select-client" options={{ headerShown: true, title: 'Selecionar cliente' }} />
+        <Stack.Screen name="clients/index" />
+        <Stack.Screen name="clients/[id]" />
+        <Stack.Screen name="clients/form" />
+        <Stack.Screen name="orders/index" />
+        <Stack.Screen name="orders/[id]" />
+        <Stack.Screen name="orders/form" />
+        <Stack.Screen name="orders/select-client" />
       </Stack.Protected>
     </Stack>
   );

@@ -6,6 +6,7 @@ import { List, Searchbar } from 'react-native-paper';
 import { listClients } from '../../src/api/clients';
 import { toApiError } from '../../src/api/http';
 import { EmptyState, ErrorState, LoadingState } from '../../src/components/ScreenState';
+import { Screen } from '../../src/components/Screen';
 import { colors, layout, radius, spacing } from '../../src/theme';
 import { setPickedClient } from '../../src/utils/pickerBus';
 
@@ -68,10 +69,10 @@ export default function SelectClient() {
   }
 
   return (
-    <View style={styles.container}>
+    <Screen title="Selecionar cliente" back>
       <Searchbar placeholder="Buscar cliente" value={search} onChangeText={setSearch} style={styles.search} />
       {body}
-    </View>
+    </Screen>
   );
 }
 

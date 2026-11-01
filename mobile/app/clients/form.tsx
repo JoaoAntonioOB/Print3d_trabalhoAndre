@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm, type Control, type FieldPath } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { createClient, getClient, lookupCep, lookupCnpj, updateClient, type Client, type ClientInput } from '../../src/api/clients';
 import { toApiError } from '../../src/api/http';
 import { FormScroll } from '../../src/components/FormScroll';
+import { Screen } from '../../src/components/Screen';
 import { LoadingState } from '../../src/components/ScreenState';
 import { colors, spacing } from '../../src/theme';
 import { maskCep, maskCpfCnpj, maskPhone, onlyDigits } from '../../src/utils/masks';
@@ -227,14 +228,17 @@ export default function ClientForm() {
     }
   });
 
-  if (editingId !== undefined && existing.isPending) return <LoadingState />;
+  const title = editingId !== undefined ? 'Editar cliente' : 'Novo cliente';
+
+  if (editingId !== undefined && existing.isPending) {
+    return <Screen title={title} back><LoadingState /></Screen>;
+  }
 
   const busy = isSubmitting || save.isPending;
   const msg = (n: Name) => errors[n]?.message;
 
   return (
-    <>
-      <Stack.Screen options={{ title: editingId !== undefined ? 'Editar cliente' : 'Novo cliente' }} />
+    <Screen title={title} back>
       <FormScroll>
         <Field control={control} name="nome" label="Nome *" icon="account-outline" error={msg('nome')} autoCapitalize="words" />
         <Field control={control} name="telefone" label="Telefone" icon="phone-outline" error={msg('telefone')} mask={maskPhone} keyboardType="phone-pad" />
@@ -282,7 +286,7 @@ export default function ClientForm() {
           {editingId !== undefined ? 'Salvar alterações' : 'Cadastrar'}
         </Button>
       </FormScroll>
-    </>
+    </Screen>
   );
 }
 

@@ -21,7 +21,7 @@ export function MenuButton() {
   return <IconButton icon="menu" accessibilityLabel="Abrir menu" onPress={openMenu} />;
 }
 
-type Item = { label: string; icon: string; href: string; push?: boolean };
+type Item = { label: string; icon: string; href: string };
 
 const SECTIONS: { title: string; items: Item[] }[] = [
   { title: 'Geral', items: [{ label: 'Início', icon: 'home-outline', href: '/' }] },
@@ -29,14 +29,12 @@ const SECTIONS: { title: string; items: Item[] }[] = [
     title: 'Clientes',
     items: [
       { label: 'Lista de clientes', icon: 'account-group-outline', href: '/clients' },
-      { label: 'Cadastrar cliente', icon: 'account-plus-outline', href: '/clients/form', push: true },
     ],
   },
   {
     title: 'Pedidos',
     items: [
       { label: 'Lista de pedidos', icon: 'clipboard-list-outline', href: '/orders' },
-      { label: 'Cadastrar pedido', icon: 'clipboard-plus-outline', href: '/orders/form', push: true },
     ],
   },
 ];
@@ -86,11 +84,11 @@ function SideMenuPanel({ visible, progress, onClose }: {
 
   const go = (item: Item) => {
     onClose();
-    if (item.push) router.push(item.href as never);
-    else router.navigate(item.href as never);
+    router.navigate(item.href as never);
   };
 
-  const isActive = (item: Item) => !item.push && (item.href === '/' ? pathname === '/' : pathname.startsWith(item.href) && !pathname.startsWith(`${item.href}/form`));
+  const isActive = (item: Item) =>
+    item.href === '/' ? pathname === '/' : pathname === item.href;
 
   return (
     <Modal transparent visible animationType="none" onRequestClose={onClose} statusBarTranslucent>

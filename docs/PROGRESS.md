@@ -13,6 +13,8 @@
 
 - **Menu lateral + ícones:** menu deslizante pelas três barras (Início, lista/cadastro de clientes e de pedidos, Sair) no lugar dos botões flutuantes; ícones corrigidos instalando `@expo/vector-icons` (antes o Paper caía num pacote com fontes nativas que não existem no Expo Go, e os ícones viravam um quadrado com "?"). `react-dom` fixado em 19.3.0 via `overrides` no `package.json`, porque o `npm install` quebrava com o patch 19.3.1.
 
+- **Cabeçalho próprio:** o cabeçalho nativo do iOS é transparente e cobria o primeiro campo dos formulários; todas as telas internas agora usam `Screen` (barra do Paper com área segura, menu/voltar). Botão **Novo** dentro das listas de clientes e de pedidos; o menu lateral ficou só com navegação (Início, Lista de clientes, Lista de pedidos, Sair).
+
 ## Pendências / opcionais
 - Renomear `backend/` → `api/` (a pasta estava travada pela IDE); ajustar caminhos nos docs e no CI.
 - Validar o layout revisado e o Marco 4/5 no iPhone (a revisão visual não pôde ser feita pelo assistente).

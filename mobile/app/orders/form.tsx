@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Controller, useForm, type FieldPath } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
@@ -10,6 +10,7 @@ import { getClient } from '../../src/api/clients';
 import { toApiError } from '../../src/api/http';
 import { canEdit, createOrder, getOrder, updateOrder, type OrderInput } from '../../src/api/orders';
 import { FormScroll } from '../../src/components/FormScroll';
+import { Screen } from '../../src/components/Screen';
 import { ClientPicker } from '../../src/components/ClientPicker';
 import { LoadingState } from '../../src/components/ScreenState';
 import { colors, spacing } from '../../src/theme';
@@ -127,9 +128,17 @@ export default function OrderForm() {
     }
   });
 
-  if (editingId !== undefined && existing.isPending) return <LoadingState />;
+  const title = editingId !== undefined ? 'Editar pedido' : 'Novo pedido';
+
+  if (editingId !== undefined && existing.isPending) {
+    return <Screen title={title} back><LoadingState /></Screen>;
+  }
   if (existing.data && !canEdit(existing.data.status)) {
-    return <HelperText type="error" visible style={styles.blocked}>Este pedido não pode mais ser editado.</HelperText>;
+    return (
+      <Screen title={title} back>
+        <HelperText type="error" visible style={styles.blocked}>Este pedido não pode mais ser editado.</HelperText>
+      </Screen>
+    );
   }
 
   const busy = isSubmitting || save.isPending;
@@ -137,8 +146,7 @@ export default function OrderForm() {
   const msg = (n: Name) => errors[n]?.message;
 
   return (
-    <>
-      <Stack.Screen options={{ title: editingId !== undefined ? 'Editar pedido' : 'Novo pedido' }} />
+    <Screen title={title} back>
       <FormScroll>
         <ClientPicker
           selectedName={clientName}
@@ -197,7 +205,7 @@ export default function OrderForm() {
           {editingId !== undefined ? 'Salvar alterações' : 'Criar pedido'}
         </Button>
       </FormScroll>
-    </>
+    </Screen>
   );
 }
 

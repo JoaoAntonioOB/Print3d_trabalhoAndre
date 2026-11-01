@@ -10,6 +10,7 @@ import {
 } from '../../src/api/orders';
 import { ErrorState, LoadingState } from '../../src/components/ScreenState';
 import { StatusChip } from '../../src/components/StatusChip';
+import { Screen } from '../../src/components/Screen';
 import { colors, layout, radius, spacing } from '../../src/theme';
 import { formatBRL, formatGrams, isoToBr, todayIso } from '../../src/utils/format';
 
@@ -71,16 +72,18 @@ export default function OrderDetail() {
       { text: 'Excluir', style: 'destructive', onPress: () => remove.mutate() },
     ]);
 
-  if (query.isPending) return <LoadingState />;
+  const frame = (node: React.ReactNode) => <Screen title="Pedido" back>{node}</Screen>;
+
+  if (query.isPending) return frame(<LoadingState />);
   if (query.isError) {
-    return <ErrorState message={toApiError(query.error).message} onRetry={() => void query.refetch()} />;
+    return frame(<ErrorState message={toApiError(query.error).message} onRetry={() => void query.refetch()} />);
   }
 
   const o = query.data;
   const late = isOpen(o.status) && o.prazo < todayIso();
   const busy = changeStatus.isPending || remove.isPending;
 
-  return (
+  return frame(
     <ScrollView style={styles.container} contentContainerStyle={[layout.content, styles.content, { paddingBottom: spacing.xl + bottom }]}>
       <View style={styles.header}>
         <StatusChip status={o.status} />
@@ -163,7 +166,7 @@ export default function OrderDetail() {
           </Button>
         ) : null}
       </View>
-    </ScrollView>
+    </ScrollView>,
   );
 }
 
