@@ -1,18 +1,22 @@
 import { StyleSheet, View } from 'react-native';
-import { Text } from 'react-native-paper';
-import { API_URL } from '../src/api/http';
+import { Button, Text } from 'react-native-paper';
+import { useAuth } from '../src/auth/AuthContext';
 import { colors, spacing } from '../src/theme';
 
-/** Tela provisória do Marco 0; o login entra no Marco 1. */
+/** Tela provisória (só autenticados): o dashboard entra no Marco 4. */
 export default function Home() {
+  const { user, signOut } = useAuth();
   return (
     <View style={styles.container}>
       <Text variant="headlineMedium" style={styles.title}>
-        Print3D Mobile
+        Olá, {user?.nome}
       </Text>
       <Text variant="bodyMedium" style={styles.muted}>
-        API: {API_URL}
+        {user?.email}
       </Text>
+      <Button mode="outlined" onPress={() => void signOut()} style={styles.button}>
+        Sair
+      </Button>
     </View>
   );
 }
@@ -27,4 +31,5 @@ const styles = StyleSheet.create({
   },
   title: { color: colors.primary, fontWeight: '700' },
   muted: { color: colors.textMuted, marginTop: spacing.sm },
+  button: { marginTop: spacing.lg },
 });

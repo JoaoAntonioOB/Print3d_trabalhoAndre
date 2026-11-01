@@ -6,10 +6,11 @@
 - Migrations: `V1` schema (usuarios, clientes, pedidos), `V2` usuário demo. 26 testes passando (unitários + Testcontainers).
 
 - **Marco 0 concluído:** app Expo (`mobile/`) com Expo Router, React Native Paper, tokens de tema, cliente axios (`EXPO_PUBLIC_API_URL`); typecheck e bundle Android OK. Falta só validar no Expo Go.
+- **Marco 1 (código pronto):** tela de login (Zod + mensagens da API), token no SecureStore, rotas protegidas (`Stack.Protected`), logout, 401 derruba a sessão, erro de rede com mensagem própria. Contrato do login conferido contra a API real. Falta validar no Expo Go.
 
 ## Próximo
 - Renomear `backend/` → `api/` se desejado (pasta estava travada pela IDE).
-- Marco 1: autenticação no app. Marco 2: `/api/cep` + telas de clientes. Marco 3: pedidos. Marco 4: dashboard. Marco 5: fechamento.
+- Marco 2: `/api/cep` + telas de clientes. Marco 3: pedidos. Marco 4: dashboard. Marco 5: fechamento.
 
 ## Decisões
 - Mantidos nomes em português do domínio (tabelas/campos), como no código herdado.

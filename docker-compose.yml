@@ -3,7 +3,7 @@ name: print3d-mobile
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: print3d-postgres
+    container_name: print3d-mobile-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-print3d_mobile}

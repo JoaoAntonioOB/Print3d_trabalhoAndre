@@ -1,0 +1,128 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Button, HelperText, Text, TextInput } from 'react-native-paper';
+import { z } from 'zod';
+import { toApiError } from '../src/api/http';
+import { useAuth } from '../src/auth/AuthContext';
+import { colors, spacing } from '../src/theme';
+
+const schema = z.object({
+  email: z.string().trim().min(1, 'Informe o e-mail').email('E-mail inválido'),
+  senha: z.string().min(1, 'Informe a senha'),
+});
+type FormData = z.infer<typeof schema>;
+
+export default function Login() {
+  const { signIn } = useAuth();
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const {
+    control,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({ resolver: zodResolver(schema), defaultValues: { email: '', senha: '' } });
+
+  const submit = handleSubmit(async ({ email, senha }) => {
+    setServerError(null);
+    try {
+      await signIn(email, senha);
+    } catch (e) {
+      const err = toApiError(e);
+      err.fieldErrors.forEach((f) => {
+        if (f.field === 'email' || f.field === 'senha') setError(f.field, { message: f.message });
+      });
+      setServerError(err.message);
+    }
+  });
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <Text variant="headlineMedium" style={styles.title}>
+          Print3D Mobile
+        </Text>
+        <Text variant="bodyMedium" style={styles.muted}>
+          Entre para gerenciar clientes e pedidos.
+        </Text>
+
+        <View style={styles.form}>
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { value, onChange, onBlur } }) => (
+              <>
+                <TextInput
+                  label="E-mail"
+                  mode="outlined"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  textContentType="username"
+                  error={!!errors.email}
+                />
+                <HelperText type="error" visible={!!errors.email}>
+                  {errors.email?.message}
+                </HelperText>
+              </>
+            )}
+          />
+          <Controller
+            control={control}
+            name="senha"
+            render={({ field: { value, onChange, onBlur } }) => (
+              <>
+                <TextInput
+                  label="Senha"
+                  mode="outlined"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  textContentType="password"
+                  error={!!errors.senha}
+                  right={
+                    <TextInput.Icon
+                      icon={showPassword ? 'eye-off' : 'eye'}
+                      onPress={() => setShowPassword((v) => !v)}
+                    />
+                  }
+                  onSubmitEditing={() => void submit()}
+                />
+                <HelperText type="error" visible={!!errors.senha}>
+                  {errors.senha?.message}
+                </HelperText>
+              </>
+            )}
+          />
+
+          <HelperText type="error" visible={!!serverError} style={styles.serverError}>
+            {serverError}
+          </HelperText>
+
+          <Button mode="contained" onPress={() => void submit()} loading={isSubmitting} disabled={isSubmitting}>
+            Entrar
+          </Button>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  flex: { flex: 1, backgroundColor: colors.background },
+  container: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg },
+  title: { color: colors.primary, fontWeight: '700', textAlign: 'center' },
+  muted: { color: colors.textMuted, textAlign: 'center', marginTop: spacing.sm },
+  form: { marginTop: spacing.xl },
+  serverError: { marginBottom: spacing.sm },
+});
