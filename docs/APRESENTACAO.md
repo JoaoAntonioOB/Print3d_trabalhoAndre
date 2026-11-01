@@ -66,7 +66,7 @@ Pré-requisitos: banco e API no ar, celular na mesma rede (ver README). Os dados
 | Requisito do professor | Como atendemos | Onde ver |
 |---|---|---|
 | Login e autenticação, funcionalidades só para autenticados | Login JWT na API; rotas do app protegidas; logout; 401 derruba a sessão; token no armazenamento seguro | `app/login.tsx`, `AuthContext`, `security/` |
-| Dashboard com indicadores relevantes | 12 blocos de dados: pedidos em aberto e valor a receber, faturamento do mês, ticket médio, clientes, material usado (kg), vendas por mês (gráfico de 6 meses), fila de produção, vencimentos da semana, atrasados, maiores clientes, uso por material, últimos pedidos | `app/index.tsx`, `GET /api/dashboard` |
+| Dashboard com indicadores relevantes | 13 indicadores e painéis: pedidos em aberto e valor a receber, faturamento do mês, ticket médio, clientes, material usado (kg), vendas por mês (gráfico de 6 meses), fila de produção, vencimentos da semana, atrasados, maiores clientes, uso por material, últimos pedidos | `app/index.tsx`, `GET /api/dashboard` |
 | Cadastro, consulta, edição e exclusão | CRUD de **Clientes** e **Pedidos** (busca, filtro por status, paginação) | `app/clients/*`, `app/orders/*` |
 | Integração com API externa | **ViaCEP** (CEP) e **BrasilAPI** (CNPJ) no cadastro de cliente | `cep/*`, `cnpj/*` (API), `clients/form.tsx` |
 | API BFF com regras de negócio e persistência; app sem acesso direto ao banco | Spring Boot + PostgreSQL com Flyway; o app só fala HTTP com a API | `backend/` |

@@ -4,7 +4,7 @@ App mobile (React Native/Expo) para donos e operadores de pequenas empresas de i
 
 - `backend/` — API (BFF) Spring Boot: autenticação JWT, regras de negócio, persistência e integração com ViaCEP e BrasilAPI.
 - `mobile/` — app Expo (React Native + TypeScript).
-- `docs/` — progresso, specs por marco e [roteiro de apresentação](docs/APRESENTACAO.md).
+- `docs/` — progresso, specs por marco, [roteiro de apresentação](docs/APRESENTACAO.md) e [slides para treinar](docs/apresentacao.html) (abra no navegador).
 
 Login de demonstração: `demo@print3d.com` / `admin123` (dados de exemplo já vêm carregados).
 

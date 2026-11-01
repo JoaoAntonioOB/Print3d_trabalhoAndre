@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Print3D Mobile — Apresentação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1b1d22; --text: #16181d; --muted: #59606c; --bg: #f5f6f8; --surface: #ffffff;
+    --border: #e3e6eb; --rule: #eceff3; --raised: #eceef2; --control: #c9ced6;
+    --accent: #c2410c; --accent-soft: #fdeee6; --error: #b3261e; --ok: #247b50;
+    --st-pend-bg: #fdf0c8; --st-pend-fg: #6b4e00;
+    --st-prod-bg: #d6e6fb; --st-prod-fg: #0b3a73;
+    --st-conc-bg: #d3f0e2; --st-conc-fg: #05563b;
+    --st-entr-bg: #e6e8ec; --st-entr-fg: #2f3540;
+    --st-canc-bg: #f6d9d6; --st-canc-fg: #7a1a14;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #0f1115; color: var(--text); display: flex; flex-direction: column; overflow: hidden;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- palco 16:9 (1280×720), escalado para caber ---------- */
+  #viewport { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; position: relative; }
+  #stage { width: 1280px; height: 720px; position: absolute; left: 50%; top: 50%; transform-origin: center center; background: var(--bg); overflow: hidden; border-radius: 6px; }
+  .slide { position: absolute; inset: 0; padding: 56px 72px 64px; display: none; flex-direction: column; }
+  .slide.active { display: flex; }
+  .slide h1 { font-size: 54px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; }
+  .slide h2 { font-size: 40px; line-height: 1.15; font-weight: 600; letter-spacing: -0.015em; margin-bottom: 28px; }
+  .slide h3 { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+  .slide p, .slide li { font-size: 24px; line-height: 1.4; }
+  .muted { color: var(--muted); }
+  .accent { color: var(--accent); }
+  .kicker { font-size: 18px; font-weight: 500; color: var(--muted); margin-bottom: 14px; }
+  .footer { position: absolute; left: 72px; right: 72px; bottom: 24px; display: flex; justify-content: space-between; font-size: 15px; color: var(--muted); }
+
+  .grid { display: grid; gap: 20px; }
+  .g2 { grid-template-columns: 1fr 1fr; } .g3 { grid-template-columns: repeat(3, 1fr); } .g4 { grid-template-columns: repeat(4, 1fr); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 22px 24px; }
+  .card p, .card li { font-size: 20px; }
+  .card .big { font-size: 44px; font-weight: 600; line-height: 1.1; margin-bottom: 4px; }
+  ul.clean { list-style: none; padding: 0; display: grid; gap: 12px; }
+  ul.clean li { padding-left: 22px; position: relative; }
+  ul.clean li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+  /* ---------- capa ---------- */
+  .cover { background: var(--ink); color: #fff; justify-content: center; }
+  .cover .mark { width: 76px; height: 76px; border-radius: 16px; background: var(--accent); display: grid; place-items: center; margin-bottom: 36px; }
+  .cover h1 { font-size: 78px; }
+  .cover p { color: #c9ced6; font-size: 28px; margin-top: 18px; max-width: 880px; }
+  .cover .meta { position: absolute; left: 72px; bottom: 56px; font-size: 18px; color: #9aa1ad; }
+  .layers { position: absolute; right: 72px; top: 96px; width: 300px; display: grid; gap: 10px; }
+  .layers i { display: block; height: 14px; border-radius: 3px; background: #2a2d34; }
+  .layers i:nth-child(3n) { background: var(--accent); }
+
+  /* ---------- diagramas ---------- */
+  .arch { display: grid; grid-template-columns: 1fr 70px 1fr 70px 1fr; align-items: center; gap: 0; margin-top: 8px; }
+  .node { background: var(--surface); border: 1.5px solid var(--ink); border-radius: 8px; padding: 22px; text-align: center; }
+  .node.ext { border-style: dashed; border-color: var(--control); }
+  .node b { display: block; font-size: 24px; }
+  .node span { font-size: 17px; color: var(--muted); }
+  .arrow { text-align: center; font-size: 28px; color: var(--accent); }
+  .arch-row2 { display: grid; grid-template-columns: 1fr 70px 1fr 70px 1fr; margin-top: 8px; }
+  .down { text-align: center; font-size: 28px; color: var(--accent); grid-column: 3; }
+  .ext-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 6px; padding: 0 0 0 0; }
+  .note { margin-top: 22px; font-size: 20px; color: var(--muted); }
+
+  .flow { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 999px; font-weight: 600; font-size: 22px; }
+  .pend { background: var(--st-pend-bg); color: var(--st-pend-fg); } .prod { background: var(--st-prod-bg); color: var(--st-prod-fg); }
+  .conc { background: var(--st-conc-bg); color: var(--st-conc-fg); } .entr { background: var(--st-entr-bg); color: var(--st-entr-fg); }
+  .canc { background: var(--st-canc-bg); color: var(--st-canc-fg); }
+  .sep { font-size: 26px; color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; padding: 13px 18px; font-size: 19px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: 16px; background: var(--raised); }
+  tr:last-child td { border-bottom: 0; }
+  td.code { font-weight: 600; white-space: nowrap; }
+
+  ol.steps { list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; counter-reset: s; }
+  ol.steps li { counter-increment: s; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px 14px 58px; position: relative; font-size: 19px; line-height: 1.35; }
+  ol.steps li::before { content: counter(s); position: absolute; left: 16px; top: 13px; width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: #fff; font-weight: 600; font-size: 15px; display: grid; place-items: center; }
+  ol.steps b { font-weight: 600; }
+
+  .bars { display: grid; gap: 14px; }
+  .bar { display: grid; grid-template-columns: 130px 1fr 40px; gap: 14px; align-items: center; font-size: 19px; }
+  .bar .t { height: 12px; background: var(--raised); border-radius: 6px; overflow: hidden; } .bar .t i { display: block; height: 100%; background: var(--control); }
+  .bar.hot .t i { background: var(--accent); }
+  .cols { display: flex; align-items: flex-end; gap: 14px; height: 170px; }
+  .cols div { flex: 1; text-align: center; font-size: 15px; color: var(--muted); display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+  .cols i { display: block; background: var(--control); border-radius: 4px 4px 0 0; margin: 4px auto 6px; width: 62%; }
+  .cols div.now i { background: var(--accent); } .cols div.now { color: var(--text); font-weight: 600; }
+
+  .qa { display: grid; gap: 14px; }
+  .qa details { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 20px; }
+  .qa summary { cursor: pointer; font-weight: 600; font-size: 20px; }
+  .qa p { font-size: 19px; margin-top: 10px; color: var(--muted); }
+
+  .pill { display: inline-block; padding: 3px 12px; border-radius: 999px; font-size: 16px; font-weight: 600; background: var(--raised); color: var(--text); }
+
+  /* ---------- chrome da apresentação ---------- */
+  #progress { height: 4px; background: #23262d; flex: none; } #progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  #bar { flex: none; display: flex; align-items: center; gap: 18px; padding: 8px 18px; background: #16181d; color: #c9ced6; font-size: 14px; }
+  #bar .sp { flex: 1; }
+  #bar button { font: inherit; color: #fff; background: #2a2d34; border: 1px solid #3a3e47; border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+  #bar button:hover { background: #343841; }
+  #bar kbd { background: #2a2d34; border: 1px solid #3a3e47; border-radius: 4px; padding: 1px 6px; font-size: 12px; color: #fff; }
+  #timer.over { color: #ff8a65; font-weight: 600; }
+  #notes { flex: none; height: 0; overflow: hidden; background: #fff; border-top: 3px solid var(--accent); transition: height .15s; }
+  #notes.open { height: 210px; }
+  #notes .in { padding: 14px 24px; height: 100%; overflow: auto; display: grid; grid-template-columns: 1fr 260px; gap: 28px; }
+  #notes h4 { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 6px; letter-spacing: 0; }
+  #notes p { font-size: 17px; line-height: 1.5; }
+  #notes .tips li { font-size: 15px; margin-left: 18px; line-height: 1.45; }
+
+  @media print {
+    body { overflow: visible; display: block; background: #fff; }
+    #bar, #progress, #notes { display: none; }
+    #viewport { display: block; }
+    #stage { position: static; transform: none !important; width: auto; height: auto; border-radius: 0; background: #fff; }
+    .slide, .slide.active { display: flex; position: relative; width: 1280px; height: 720px; page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"><i></i></div>
+<div id="viewport"><div id="stage">
+
+<!-- 1 · Capa -->
+<section class="slide cover" data-time="20" data-title="Capa">
+  <div class="layers" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="mark" aria-hidden="true">
+    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v5H6z"/><path d="M12 8v4"/><path d="M4 21l3-9h10l3 9z"/></svg>
+  </div>
+  <h1>Print3D Mobile</h1>
+  <p>Clientes, pedidos e indicadores de uma empresa de impressão 3D, em um aplicativo.</p>
+  <div class="meta">Aplicativo React Native (Expo) · API Spring Boot · PostgreSQL</div>
+  <aside hidden data-notes>Bom dia/boa tarde. Somos [nomes do grupo] e vamos apresentar o Print3D Mobile, um aplicativo que resolve um problema real de pequenas empresas de impressão 3D: controlar clientes e pedidos sem planilha e sem WhatsApp. Vou mostrar o problema, a solução, como ela foi construída, e depois uma demonstração ao vivo no celular.</aside>
+  <aside hidden data-tips>Fale devagar na abertura. Diga o nome do grupo e o tema em uma frase. Não leia o slide.</aside>
+</section>
+
+<!-- 2 · Problema -->
+<section class="slide" data-time="45" data-title="O problema">
+  <div class="kicker">O problema</div>
+  <h2>Pequenas empresas de impressão 3D controlam tudo em planilha e WhatsApp</h2>
+  <div class="grid g3" style="margin-top:8px">
+    <div class="card"><div class="big accent">?</div><h3>Qual o status?</h3><p>Ninguém sabe ao certo o que está na fila, em produção ou pronto para entrega.</p></div>
+    <div class="card"><div class="big accent">!</div><h3>Prazos escapam</h3><p>Pedidos atrasam sem aviso, e o cliente descobre antes do dono.</p></div>
+    <div class="card"><div class="big accent">R$</div><h3>Faturamento no escuro</h3><p>Não há visão de quanto vendeu no mês, nem de quem são os melhores clientes.</p></div>
+  </div>
+  <p class="note">Os dados do cliente (endereço, telefone) ficam espalhados em conversas e arquivos soltos.</p>
+  <aside hidden data-notes>Imagine o dono de uma pequena oficina de impressão 3D. Os pedidos chegam por WhatsApp, os clientes ficam numa planilha. Resultado: ele não sabe o que está em produção, os prazos escapam e no fim do mês não sabe quanto faturou. Foi essa dor que escolhemos resolver.</aside>
+  <aside hidden data-tips>Se puder, conte um exemplo curto e concreto (um pedido que atrasou). Banca gosta de problema com cara de verdade.</aside>
+</section>
+
+<!-- 3 · Público e benefícios -->
+<section class="slide" data-time="40" data-title="Público e benefícios">
+  <div class="kicker">Para quem e para quê</div>
+  <h2>Donos e operadores ganham controle em um só lugar</h2>
+  <div class="grid g2">
+    <div class="card"><h3>Público</h3><ul class="clean"><li>Donos de pequenas empresas de impressão 3D</li><li>Operadores que cuidam da produção e do atendimento</li></ul></div>
+    <div class="card"><h3>Benefícios</h3><ul class="clean"><li>Clientes e pedidos centralizados</li><li>Status e prazos sempre visíveis</li><li>Indicadores de vendas no painel</li><li>Cadastro rápido: o CEP e o CNPJ preenchem os dados</li></ul></div>
+  </div>
+  <aside hidden data-notes>O público são donos e operadores dessas empresas. Os benefícios são quatro: centralizar clientes e pedidos, ver status e prazos, acompanhar as vendas num painel e cadastrar clientes rápido, porque o CEP e o CNPJ preenchem os dados automaticamente. Por isso o aplicativo é mobile: o dono consulta de qualquer lugar.</aside>
+  <aside hidden data-tips>Faça a ponte: "por isso é mobile". A banca quer ver aderência entre problema e solução.</aside>
+</section>
+
+<!-- 4 · Solução -->
+<section class="slide" data-time="50" data-title="A solução">
+  <div class="kicker">A solução</div>
+  <h2>Quatro funções que cobrem o dia a dia</h2>
+  <div class="grid g4">
+    <div class="card"><h3>Login</h3><p>Só quem tem conta acessa. Sessão segura no aparelho.</p></div>
+    <div class="card"><h3>Clientes</h3><p>Cadastrar, buscar, editar e excluir. Endereço automático.</p></div>
+    <div class="card"><h3>Pedidos</h3><p>Do pedido à entrega, com status e prazo controlados.</p></div>
+    <div class="card"><h3>Painel</h3><p>Fila, atrasos, vendas por mês e maiores clientes.</p></div>
+  </div>
+  <p class="note">Todas as telas, exceto o login, exigem autenticação.</p>
+  <aside hidden data-notes>A solução tem quatro partes. Login, para que só usuários autenticados acessem. Clientes, com cadastro, busca, edição e exclusão. Pedidos, com um ciclo de status controlado. E o painel, com os indicadores. Vou mostrar cada uma na demonstração.</aside>
+  <aside hidden data-tips>Mencione que atende o enunciado: login, CRUD, dashboard e API externa. Não detalhe ainda.</aside>
+</section>
+
+<!-- 5 · Arquitetura -->
+<section class="slide" data-time="60" data-title="Arquitetura (BFF)">
+  <div class="kicker">Como foi construído</div>
+  <h2>O app só conversa com a nossa API</h2>
+  <div class="arch">
+    <div class="node"><b>App mobile</b><span>React Native · Expo<br>TypeScript</span></div>
+    <div class="arrow">⇄</div>
+    <div class="node" style="border-width:3px"><b>API BFF</b><span>Spring Boot · JWT<br>regras de negócio</span></div>
+    <div class="arrow">⇄</div>
+    <div class="node"><b>PostgreSQL</b><span>migrations Flyway</span></div>
+  </div>
+  <div class="arch-row2"><span></span><span></span><div class="down">↕</div><span></span><span></span></div>
+  <div class="arch" style="grid-template-columns:1fr 70px 1fr 70px 1fr; margin-top:0">
+    <span></span><span></span>
+    <div class="grid g2" style="gap:16px">
+      <div class="node ext"><b>ViaCEP</b><span>CEP → endereço</span></div>
+      <div class="node ext"><b>BrasilAPI</b><span>CNPJ → empresa</span></div>
+    </div>
+    <span></span><span></span>
+  </div>
+  <p class="note">O app <b>nunca</b> acessa o banco nem as APIs externas: a API valida, aplica as regras, grava e consulta os serviços de fora.</p>
+  <aside hidden data-notes>Esta é a arquitetura BFF, Backend For Frontend. O aplicativo só conversa com a nossa API. A API aplica as regras de negócio, grava no PostgreSQL e consulta as APIs externas, a ViaCEP e a BrasilAPI. O app não acessa o banco e nem os serviços externos diretamente. Isso protege os dados e deixa as regras num lugar só. O esquema do banco é versionado com Flyway.</aside>
+  <aside hidden data-tips>Aponte com o dedo/mouse para cada caixa na ordem: app, API, banco, externos. Pergunta provável: "por que BFF?" (resposta na última seção).</aside>
+</section>
+
+<!-- 6 · Integrações -->
+<section class="slide" data-time="60" data-title="Integrações externas">
+  <div class="kicker">Integração com APIs externas</div>
+  <h2>CEP e CNPJ preenchem o cadastro sozinhos</h2>
+  <table>
+    <tr><th>Situação</th><th>Resposta da API</th><th>O que o usuário vê</th></tr>
+    <tr><td>CEP/CNPJ válido</td><td class="code">200</td><td>Endereço e dados da empresa preenchidos</td></tr>
+    <tr><td>Malformado ou dígito verificador errado</td><td class="code">400</td><td>"CEP inválido" / "CNPJ inválido" (sem chamar o serviço externo)</td></tr>
+    <tr><td>Não existe</td><td class="code">404</td><td>"Não encontrado, preencha manualmente."</td></tr>
+    <tr><td>Serviço fora do ar, limite ou timeout</td><td class="code">503</td><td>"Serviço indisponível, preencha manualmente."</td></tr>
+  </table>
+  <p class="note"><b>Nunca bloqueia o cadastro.</b> Timeout de 3 s (CEP) e 4 s (CNPJ), com cache em memória. Os testes usam HTTP simulado.</p>
+  <aside hidden data-notes>Temos duas integrações externas. Ao digitar o CEP, o app chama a nossa API, que consulta a ViaCEP e devolve só o endereço. Ao digitar o CNPJ, a API valida os dígitos verificadores antes de consultar a BrasilAPI. Os erros são tratados: formato inválido volta 400, inexistente 404 e serviço fora do ar 503, sempre com mensagem clara. E o ponto principal: uma falha externa nunca impede o cadastro, o usuário pode preencher à mão. Nos testes, o HTTP é simulado, nunca chamamos o serviço real.</aside>
+  <aside hidden data-tips>Esse slide mostra "tratamento de erros e mensagens claras", item do enunciado. Na demo, mostre o CEP 99999-999 (inexistente).</aside>
+</section>
+
+<!-- 7 · Regras de negócio -->
+<section class="slide" data-time="45" data-title="Regras de negócio">
+  <div class="kicker">Regras de negócio na API</div>
+  <h2>O pedido segue um ciclo controlado</h2>
+  <div class="flow" style="margin-bottom:26px">
+    <span class="chip pend">Pendente</span><span class="sep">→</span>
+    <span class="chip prod">Em produção</span><span class="sep">→</span>
+    <span class="chip conc">Concluído</span><span class="sep">→</span>
+    <span class="chip entr">Entregue</span>
+  </div>
+  <div class="flow" style="margin-bottom:30px"><span class="muted" style="font-size:20px">Cancelado a partir de Pendente ou Em produção:</span><span class="chip canc">Cancelado</span></div>
+  <div class="grid g2">
+    <div class="card"><h3>Pedido</h3><ul class="clean"><li>Valor e peso maiores que zero (até 2 casas)</li><li>Prazo não pode estar no passado ao criar</li><li>Só abertos podem ser editados</li></ul></div>
+    <div class="card"><h3>Cliente</h3><ul class="clean"><li>Nome obrigatório; e-mail e telefone válidos</li><li>CPF/CNPJ único</li><li><b>Não é excluído se tiver pedidos</b> (erro 409)</li></ul></div>
+  </div>
+  <aside hidden data-notes>As regras de negócio ficam na API, não no aplicativo. O pedido nasce Pendente e só pode seguir o ciclo: Pendente, Em produção, Concluído e Entregue. Pode ser cancelado enquanto está Pendente ou Em produção. Pedido entregue ou cancelado não pode mais ser editado. Do lado do cliente, não é possível excluir quem tem pedidos: a API devolve um conflito, 409, com mensagem explicando. O aplicativo também só mostra os botões das transições válidas.</aside>
+  <aside hidden data-tips>Boa frase: "a regra mora na API; o app só reflete". Se perguntarem por quê: qualquer cliente que usar a API terá as mesmas regras.</aside>
+</section>
+
+<!-- 8 · Demo -->
+<section class="slide" data-time="180" data-title="Demonstração">
+  <div class="kicker">Demonstração ao vivo · ≈ 3 min</div>
+  <h2>Agora no celular</h2>
+  <ol class="steps">
+    <li><b>Login</b> com senha errada (mensagem) e depois com <i>demo@print3d.com</i></li>
+    <li><b>Painel:</b> pedidos em aberto, atrasados, vendas por mês</li>
+    <li><b>Clientes:</b> buscar "Studio"; <b>Novo</b> com CEP <i>01001-000</i></li>
+    <li><b>CNPJ</b> <i>06.990.590/0001-23</i> preenche tudo; com dígito errado dá erro</li>
+    <li><b>Erro tratado:</b> CEP <i>99999-999</i> e salvar sem nome</li>
+    <li><b>Pedido:</b> prazo no passado é recusado; criar com PLA, 120,5 g, R$ 45,90</li>
+    <li><b>Status:</b> Iniciar produção → Concluído → Entregue; cancelar pede confirmação</li>
+    <li><b>Regra:</b> excluir cliente com pedidos → bloqueado (409). Voltar ao painel e <b>Sair</b></li>
+  </ol>
+  <aside hidden data-notes>Agora vamos ao celular. Primeiro o login: vou errar a senha de propósito para mostrar a mensagem, depois entro. No painel, vejo os pedidos em aberto, os atrasados e as vendas por mês. Em Clientes, busco um cliente e cadastro um novo digitando o CEP: o endereço aparece sozinho. Depois o CNPJ: a empresa inteira é preenchida. Mostro também os erros: CEP que não existe e salvar sem nome. Em Pedidos, tento um prazo no passado e depois crio um pedido. No detalhe, avanço os status e mostro que só aparecem as transições válidas. Por fim, tento excluir um cliente que tem pedidos e a regra bloqueia. Volto ao painel, que já atualizou os números, e saio.</aside>
+  <aside hidden data-tips>ANTES de apresentar: banco e API no ar, celular na mesma rede, app aberto no Expo Go e já logado fora (deslogado). Tenha um plano B: print/vídeo da demo caso a rede falhe. Conte o tempo: 3 minutos.</aside>
+</section>
+
+<!-- 9 · Painel -->
+<section class="slide" data-time="45" data-title="Painel de indicadores">
+  <div class="kicker">Dashboard</div>
+  <h2>Os números que ajudam a decidir</h2>
+  <div class="grid g2" style="grid-template-columns: 1.1fr 1fr; align-items:start">
+    <div class="card">
+      <h3>Vendas dos últimos 6 meses</h3>
+      <div class="cols">
+        <div><i style="height:20%"></i>jun</div><div><i style="height:32%"></i>jul</div><div><i style="height:48%"></i>ago</div>
+        <div><i style="height:55%"></i>set</div><div><i style="height:100%"></i>out</div><div class="now"><i style="height:62%"></i>nov</div>
+      </div>
+      <p class="muted" style="font-size:16px;margin-top:6px">Ilustração. No app, os valores vêm do banco.</p>
+    </div>
+    <div class="card">
+      <h3>Fila de produção</h3>
+      <div class="bars">
+        <div class="bar"><span>Pendente</span><span class="t"><i style="width:60%"></i></span><b>5</b></div>
+        <div class="bar hot"><span>Em produção</span><span class="t"><i style="width:36%"></i></span><b>3</b></div>
+        <div class="bar"><span>Concluído</span><span class="t"><i style="width:24%"></i></span><b>2</b></div>
+      </div>
+    </div>
+  </div>
+  <p class="note">Também: faturamento do mês, ticket médio, valor a receber, material usado (kg), pedidos que vencem na semana, atrasados, maiores clientes e uso por material. <b>Uma única chamada</b> da API entrega tudo.</p>
+  <aside hidden data-notes>O painel responde primeiro: o que está na fila e o que está atrasado? Depois traz os indicadores de gestão: faturamento do mês, ticket médio, valor a receber, material usado. O gráfico mostra as vendas dos últimos seis meses, com o mês atual em destaque. Há também a fila de produção, os pedidos que vencem na semana, os atrasados, os maiores clientes e o uso por material. Tudo vem de uma única chamada da API, que já agrega os dados: é a ideia do BFF servir o aplicativo.</aside>
+  <aside hidden data-tips>Se já mostrou o painel na demo, aqui só reforce a ideia: "uma chamada, tudo agregado na API". Defina faturamento: soma dos pedidos criados no mês, sem cancelados.</aside>
+</section>
+
+<!-- 10 · Segurança e qualidade -->
+<section class="slide" data-time="45" data-title="Segurança e qualidade">
+  <div class="kicker">Segurança e qualidade</div>
+  <h2>Dados de clientes protegidos e testados</h2>
+  <div class="grid g2">
+    <div class="card"><h3>Segurança</h3><ul class="clean">
+      <li>Senha com BCrypt; sessão por token JWT (24 h)</li>
+      <li>Token guardado no armazenamento seguro do aparelho</li>
+      <li>Todas as rotas exigem token, exceto login</li>
+      <li>Sem dados de clientes nos logs; segredo só por variável de ambiente</li>
+      <li>Documentação da API desligada em produção</li>
+    </ul></div>
+    <div class="card"><h3>Qualidade</h3><div class="big accent">45</div><p>testes automatizados: regras de status, clientes das APIs externas (HTTP simulado) e fluxos completos contra PostgreSQL real.</p>
+    <p class="muted" style="margin-top:12px">Validação em duas camadas: no app (Zod) e na API (Bean Validation). Erro padronizado: <b>code, message, fieldErrors</b>.</p></div>
+  </div>
+  <aside hidden data-notes>Sobre segurança: as senhas são guardadas com BCrypt, a sessão usa token JWT que vale 24 horas e fica no armazenamento seguro do celular. Todas as rotas exigem o token, menos o login. Dados de clientes não vão para os logs e o segredo do token vem de variável de ambiente. Sobre qualidade: são 45 testes automatizados, incluindo testes que sobem um PostgreSQL real. A validação acontece em duas camadas, no app e na API, e todo erro segue o mesmo formato, o que permite ao app marcar o campo errado.</aside>
+  <aside hidden data-tips>Seja honesto sobre limites (próximo slide). Admitir o que ficou fora costuma ser bem recebido.</aside>
+</section>
+
+<!-- 11 · Matriz -->
+<section class="slide" data-time="40" data-title="Aderência ao enunciado">
+  <div class="kicker">Aderência ao enunciado</div>
+  <h2>O que foi pedido e onde está</h2>
+  <table>
+    <tr><th>Requisito</th><th>Como atendemos</th></tr>
+    <tr><td>Login e funcionalidades só para autenticados</td><td>Login JWT; rotas protegidas; logout; 401 derruba a sessão</td></tr>
+    <tr><td>Dashboard com indicadores relevantes</td><td>Painel com vendas por mês, fila, atrasados, clientes e materiais</td></tr>
+    <tr><td>Cadastro, consulta, edição e exclusão</td><td>CRUD de Clientes e de Pedidos, com busca e filtros</td></tr>
+    <tr><td>Integração com API externa</td><td>ViaCEP (CEP) e BrasilAPI (CNPJ)</td></tr>
+    <tr><td>API BFF com regras e persistência; app sem acesso ao banco</td><td>Spring Boot + PostgreSQL; o app só usa HTTP</td></tr>
+    <tr><td>Validação, tratamento de erros e mensagens claras</td><td>Zod + Bean Validation; erro padronizado; estados de carregando, vazio e erro</td></tr>
+  </table>
+  <aside hidden data-notes>Este slide fecha o ciclo com o enunciado. Cada requisito do professor tem uma resposta concreta: login com autenticação, dashboard, CRUD de clientes e pedidos, duas integrações externas, API BFF com regras e persistência, e validação com mensagens claras.</aside>
+  <aside hidden data-tips>Deixe a banca ler a tabela por 5 segundos antes de falar. Se faltar tempo, pule este slide e cite só "atendemos todos os itens".</aside>
+</section>
+
+<!-- 12 · Limitações -->
+<section class="slide" data-time="30" data-title="Limitações e próximos passos">
+  <div class="kicker">Limitações e próximos passos</div>
+  <h2>O que ficaria para uma próxima versão</h2>
+  <div class="grid g2">
+    <div class="card"><h3>Limitações assumidas</h3><ul class="clean"><li>Sem limite de tentativas de login</li><li>Token de 24 h sem renovação automática</li><li>Sem papéis: todo usuário autenticado acessa tudo</li><li>Demonstração em rede local (HTTP)</li></ul></div>
+    <div class="card"><h3>Próximos passos</h3><ul class="clean"><li>Hospedar API e banco, com HTTPS</li><li>Renovação de token e perfis de acesso</li><li>Notificação de pedidos atrasados</li><li>Exportar relatórios</li></ul></div>
+  </div>
+  <aside hidden data-notes>Sabemos dos limites. Não há limite de tentativas de login, o token não é renovado automaticamente e não há perfis de acesso: para o escopo do trabalho, simplificamos. Como próximos passos: hospedar a API e o banco com HTTPS, adicionar renovação de token e perfis, avisar sobre pedidos atrasados e exportar relatórios.</aside>
+  <aside hidden data-tips>Mostrar que vocês conhecem os limites passa maturidade. Não peça desculpas: apresente como decisão de escopo.</aside>
+</section>
+
+<!-- 13 · Encerramento -->
+<section class="slide cover" data-time="20" data-title="Encerramento">
+  <div class="mark" aria-hidden="true">
+    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v5H6z"/><path d="M12 8v4"/><path d="M4 21l3-9h10l3 9z"/></svg>
+  </div>
+  <h1>Obrigado!</h1>
+  <p>Do pedido à entrega, tudo na palma da mão. Estamos à disposição para perguntas.</p>
+  <div class="meta">Print3D Mobile · [nomes do grupo]</div>
+  <aside hidden data-notes>Para resumir: o Print3D Mobile centraliza clientes e pedidos, mostra os indicadores no painel e usa duas APIs externas para agilizar o cadastro, tudo com regras de negócio e segurança na API. Obrigado, ficamos à disposição para perguntas.</aside>
+  <aside hidden data-tips>Termine olhando para a banca. Em seguida, abra o próximo slide (perguntas) só se for preciso consultar.</aside>
+</section>
+
+<!-- 14 · Perguntas -->
+<section class="slide" data-time="0" data-title="Perguntas prováveis">
+  <div class="kicker">Treino <span class="pill">não faz parte da apresentação</span></div>
+  <h2>Perguntas que a banca pode fazer</h2>
+  <div class="qa">
+    <details><summary>Por que usar uma API BFF em vez de o app falar direto com o banco?</summary><p>O app nunca deve ter credenciais do banco. A API centraliza regras, validações e segurança, e serve dados já prontos para a tela (o painel vem de uma só chamada). Qualquer outro cliente, como um site, reaproveitaria as mesmas regras.</p></details>
+    <details><summary>Por que o app não chama a ViaCEP diretamente?</summary><p>Para validar o formato, aplicar timeout e cache, tratar os erros de forma padronizada e não depender do serviço externo dentro do app. Se trocarmos de provedor, só a API muda.</p></details>
+    <details><summary>O que acontece se a ViaCEP ou a BrasilAPI cair?</summary><p>A API devolve 503 com a mensagem "serviço indisponível, preencha manualmente", e o usuário completa o cadastro à mão. A falha externa nunca bloqueia o cadastro.</p></details>
+    <details><summary>Como os dados e a senha são protegidos?</summary><p>Senha com BCrypt, token JWT assinado e guardado no armazenamento seguro do celular, rotas protegidas, nada de dados de clientes nos logs e segredos só em variáveis de ambiente.</p></details>
+    <details><summary>Como vocês garantem que as regras funcionam?</summary><p>Com 45 testes automatizados: as transições de status, os clientes das APIs externas (HTTP simulado) e fluxos completos contra um PostgreSQL real.</p></details>
+    <details><summary>Por que Flyway nas migrations?</summary><p>Porque o esquema do banco fica versionado e reproduzível: qualquer pessoa sobe o banco do zero e chega ao mesmo estado, inclusive com os dados de demonstração.</p></details>
+    <details><summary>Como o faturamento do mês é calculado?</summary><p>Soma dos valores dos pedidos criados no mês, sem os cancelados. É uma definição simples, documentada na própria tela.</p></details>
+    <details><summary>O que vocês fariam com mais tempo?</summary><p>Hospedagem com HTTPS, renovação de token, perfis de acesso, aviso de pedidos atrasados e exportação de relatórios.</p></details>
+  </div>
+  <aside hidden data-notes>Slide de treino. Abra cada pergunta e responda em voz alta, com suas palavras, antes de ler a resposta sugerida. Cada resposta deve caber em até 30 segundos.</aside>
+  <aside hidden data-tips>Treino: peça para alguém do grupo fazer as perguntas fora de ordem. Dividam quem responde o quê (arquitetura, segurança, testes).</aside>
+</section>
+
+</div></div>
+
+<div id="notes"><div class="in">
+  <div><h4>O QUE DIZER (roteiro de fala)</h4><p id="notes-text"></p></div>
+  <div><h4>DICAS</h4><ul class="tips" id="notes-tips" style="padding:0"></ul></div>
+</div></div>
+
+<div id="bar">
+  <span id="count"></span>
+  <span id="title" style="color:#fff;font-weight:600"></span>
+  <span class="sp"></span>
+  <span>Slide: <b id="slide-time">0:00</b> / <span id="slide-budget">0:00</span></span>
+  <span>Total: <b id="timer">0:00</b> / <span id="budget">0:00</span></span>
+  <button id="btn-timer" type="button">▶ Iniciar (T)</button>
+  <button id="btn-notes" type="button">Roteiro (N)</button>
+  <span><kbd>←</kbd> <kbd>→</kbd> navegar · <kbd>F</kbd> tela cheia · <kbd>R</kbd> zerar</span>
+</div>
+
+<script>
+(function () {
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var stage = document.getElementById('stage');
+  var viewport = document.getElementById('viewport');
+  var notes = document.getElementById('notes');
+  var idx = 0, running = false, last = 0;
+  var spent = slides.map(function () { return 0; });
+  var budgets = slides.map(function (s) { return Number(s.dataset.time) || 0; });
+  var totalBudget = budgets.reduce(function (a, b) { return a + b; }, 0);
+
+  function fmt(sec) { sec = Math.max(0, Math.round(sec)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
+  function $(id) { return document.getElementById(id); }
+
+  function fit() {
+    var w = viewport.clientWidth, h = viewport.clientHeight;
+    var s = Math.min(w / 1280, h / 720);
+    stage.style.transform = 'translate(-50%, -50%) scale(' + s + ')';
+  }
+
+  function render() {
+    slides.forEach(function (s, i) { s.classList.toggle('active', i === idx); });
+    var cur = slides[idx];
+    $('count').textContent = (idx + 1) + ' / ' + slides.length;
+    $('title').textContent = cur.dataset.title || '';
+    $('progress').firstElementChild.style.width = ((idx + 1) / slides.length * 100) + '%';
+    var n = cur.querySelector('[data-notes]'), t = cur.querySelector('[data-tips]');
+    $('notes-text').textContent = n ? n.textContent.trim() : '';
+    var tips = $('notes-tips'); tips.innerHTML = '';
+    if (t) { var li = document.createElement('li'); li.textContent = t.textContent.trim(); tips.appendChild(li); }
+    $('slide-budget').textContent = budgets[idx] ? fmt(budgets[idx]) : '—';
+    $('budget').textContent = fmt(totalBudget);
+    tick(true);
+    history.replaceState(null, '', '#' + (idx + 1));
+  }
+
+  function tick(force) {
+    var now = Date.now();
+    if (running) { spent[idx] += (now - last) / 1000; }
+    last = now;
+    if (!running && !force) return;
+    var total = spent.reduce(function (a, b) { return a + b; }, 0);
+    $('timer').textContent = fmt(total);
+    $('timer').classList.toggle('over', total > totalBudget);
+    $('slide-time').textContent = fmt(spent[idx]);
+    $('slide-time').style.color = budgets[idx] && spent[idx] > budgets[idx] ? '#ff8a65' : '';
+  }
+
+  function go(n) { tick(false); idx = Math.max(0, Math.min(slides.length - 1, n)); render(); }
+  function toggleTimer() { tick(false); running = !running; last = Date.now(); $('btn-timer').textContent = running ? '⏸ Pausar (T)' : '▶ Iniciar (T)'; }
+  function resetTimer() { running = false; spent = slides.map(function () { return 0; }); $('btn-timer').textContent = '▶ Iniciar (T)'; go(0); }
+  function toggleNotes() { notes.classList.toggle('open'); setTimeout(fit, 180); }
+  function fullscreen() { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.target && e.target.tagName === 'SUMMARY') { if (e.key === ' ' || e.key === 'Enter') return; }
+    switch (e.key) {
+      case 'ArrowRight': case 'PageDown': case ' ': e.preventDefault(); go(idx + 1); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); go(idx - 1); break;
+      case 'Home': go(0); break;
+      case 'End': go(slides.length - 1); break;
+      case 'n': case 'N': toggleNotes(); break;
+      case 't': case 'T': toggleTimer(); break;
+      case 'r': case 'R': resetTimer(); break;
+      case 'f': case 'F': fullscreen(); break;
+    }
+  });
+  stage.addEventListener('click', function (e) {
+    if (e.target.closest('details, summary, a, button')) return;
+    var r = stage.getBoundingClientRect();
+    go((e.clientX - r.left) < r.width * 0.3 ? idx - 1 : idx + 1);
+  });
+  $('btn-timer').addEventListener('click', toggleTimer);
+  $('btn-notes').addEventListener('click', toggleNotes);
+  window.addEventListener('resize', fit);
+  setInterval(function () { tick(false); }, 250);
+
+  var start = parseInt((location.hash || '').replace('#', ''), 10);
+  if (start >= 1 && start <= slides.length) idx = start - 1;
+  fit(); render();
+})();
+</script>
+</body>
+</html>
