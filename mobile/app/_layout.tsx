@@ -25,6 +25,9 @@ function RootStack() {
       </Stack.Protected>
       <Stack.Protected guard={!!user}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="clients/index" options={{ headerShown: true, title: 'Clientes' }} />
+        <Stack.Screen name="clients/[id]" options={{ headerShown: true, title: 'Cliente' }} />
+        <Stack.Screen name="clients/form" options={{ headerShown: true, title: 'Cliente' }} />
       </Stack.Protected>
     </Stack>
   );

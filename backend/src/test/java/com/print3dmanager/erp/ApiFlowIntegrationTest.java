@@ -94,4 +94,35 @@ class ApiFlowIntegrationTest extends AbstractApiIntegrationTest {
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.fieldErrors.length()").value(3));
     }
+
+    @Test
+    @DisplayName("CEP: exige autenticação e rejeita CEP malformado com 400 (sem chamar a ViaCEP)")
+    void cep() throws Exception {
+        mockMvc.perform(get("/cep/01001000")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/cep/123").header(HttpHeaders.AUTHORIZATION, bearer(loginDemo())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("CEP inválido")));
+    }
+
+    @Test
+    @DisplayName("cliente sem pedidos: busca encontra, exclusão devolve 204 e depois 404")
+    void buscaEExclusaoDeCliente() throws Exception {
+        String auth = bearer(loginDemo());
+        String criado = mockMvc.perform(post("/clients").header(HttpHeaders.AUTHORIZATION, auth)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Zeca Teste Busca\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long id = objectMapper.readTree(criado).get("id").asLong();
+
+        mockMvc.perform(get("/clients").param("busca", "zeca teste")
+                        .header(HttpHeaders.AUTHORIZATION, auth))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].nome").value("Zeca Teste Busca"));
+
+        mockMvc.perform(delete("/clients/" + id).header(HttpHeaders.AUTHORIZATION, auth))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/clients/" + id).header(HttpHeaders.AUTHORIZATION, auth))
+                .andExpect(status().isNotFound());
+    }
 }

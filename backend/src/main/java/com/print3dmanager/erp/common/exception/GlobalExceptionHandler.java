@@ -89,6 +89,11 @@ public class GlobalExceptionHandler {
                 "Valor inválido para o parâmetro '%s'.%s".formatted(ex.getName(), valores));
     }
 
+    @ExceptionHandler(ExternalServiceException.class)
+    public ResponseEntity<ApiErrorResponse> handleServicoExterno(ExternalServiceException ex) {
+        return erro(HttpStatus.SERVICE_UNAVAILABLE, "EXTERNAL_SERVICE_UNAVAILABLE", ex.getMessage());
+    }
+
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiErrorResponse> handleRegraDeNegocio(BusinessException ex) {
         return erro(HttpStatus.BAD_REQUEST, "BUSINESS_RULE", ex.getMessage());
