@@ -5,8 +5,10 @@
 - API com login JWT, clientes (CRUD, exclusão bloqueada com pedidos), pedidos simplificados (ciclo de status) e `GET /api/dashboard`.
 - Migrations: `V1` schema (usuarios, clientes, pedidos), `V2` usuário demo. 26 testes passando (unitários + Testcontainers).
 
+- **Marco 0 concluído:** app Expo (`mobile/`) com Expo Router, React Native Paper, tokens de tema, cliente axios (`EXPO_PUBLIC_API_URL`); typecheck e bundle Android OK. Falta só validar no Expo Go.
+
 ## Próximo
-- Marco 0: criar o app Expo em `mobile/` (navegação, tema, cliente HTTP) e renomear `backend/` → `api/` se desejado (a pasta estava travada pela IDE).
+- Renomear `backend/` → `api/` se desejado (pasta estava travada pela IDE).
 - Marco 1: autenticação no app. Marco 2: `/api/cep` + telas de clientes. Marco 3: pedidos. Marco 4: dashboard. Marco 5: fechamento.
 
 ## Decisões
