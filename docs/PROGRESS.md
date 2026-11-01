@@ -5,8 +5,8 @@
 - API com login JWT, clientes (CRUD, exclusão bloqueada com pedidos), pedidos simplificados (ciclo de status) e `GET /api/dashboard`.
 - Migrations: `V1` schema (usuarios, clientes, pedidos), `V2` usuário demo. 26 testes passando (unitários + Testcontainers).
 
-- **Marco 0 concluído:** app Expo (`mobile/`) com Expo Router, React Native Paper, tokens de tema, cliente axios (`EXPO_PUBLIC_API_URL`); typecheck e bundle Android OK. Falta só validar no Expo Go.
-- **Marco 1 (código pronto):** tela de login (Zod + mensagens da API), token no SecureStore, rotas protegidas (`Stack.Protected`), logout, 401 derruba a sessão, erro de rede com mensagem própria. Contrato do login conferido contra a API real. Falta validar no Expo Go.
+- **Marco 0 concluído:** app Expo (`mobile/`) com Expo Router, React Native Paper, tokens de tema, cliente axios (`EXPO_PUBLIC_API_URL`); typecheck e bundle Android OK. Validado no Expo Go.
+- **Marco 1 (código pronto):** tela de login (Zod + mensagens da API), token no SecureStore, rotas protegidas (`Stack.Protected`), logout, 401 derruba a sessão, erro de rede com mensagem própria. Contrato do login conferido contra a API real. **Validado no iPhone (Expo Go):** login com o usuário demo abre a tela autenticada.
 
 ## Próximo
 - Renomear `backend/` → `api/` se desejado (pasta estava travada pela IDE).

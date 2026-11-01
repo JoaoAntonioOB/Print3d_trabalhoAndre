@@ -16,6 +16,17 @@ cd backend; ./mvnw spring-boot:run   # no PowerShell 5.1 use ';' (não '&&')
 
 Swagger: http://localhost:8080/api/swagger-ui.html · login de demonstração: `demo@print3d.com` / `admin123`.
 
+## Rodando o app (Expo Go)
+
+```powershell
+cd mobile
+"EXPO_PUBLIC_API_URL=http://<IP-do-PC>:8080/api" | Out-File -Encoding ascii .env
+$env:EXPO_TOKEN="<token de expo.dev/settings/access-tokens>"   # o CLI não consegue abrir o navegador no login
+npx expo start -c
+```
+
+Celular e PC na mesma rede Wi-Fi; libere a porta 8080 no firewall (perfil Privado).
+
 ## Testes
 
 ```bash

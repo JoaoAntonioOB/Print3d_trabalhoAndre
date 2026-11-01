@@ -4,7 +4,7 @@ App mobile (faculdade) que resolve o controle de clientes e pedidos de pequenas 
 
 ## Stack
 - **API/BFF** (`backend/`): Java 21, Spring Boot 3.5, Spring Security + JWT, JPA, Flyway, MapStruct, PostgreSQL 16.
-- **App** (`mobile/`, ainda não criado): Expo + TypeScript, Expo Router, React Native Paper, TanStack Query, React Hook Form + Zod, axios, expo-secure-store.
+- **App** (`mobile/`): Expo + TypeScript, Expo Router, React Native Paper, TanStack Query, React Hook Form + Zod, axios, expo-secure-store.
 - Banco via `docker-compose.yml` (só o Postgres).
 
 ## Comandos
