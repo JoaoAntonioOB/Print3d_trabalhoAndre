@@ -1,0 +1,31 @@
+# Blueprint do Render (https://render.com/docs/blueprint-spec): cria a API a partir do Dockerfile.
+# No Render: New > Blueprint > escolha este repositório. Os valores marcados com `sync: false`
+# são pedidos no painel (segredos nunca ficam no repositório). Passo a passo: docs/HOSPEDAGEM.md
+services:
+  - type: web
+    name: print3d-api
+    runtime: docker
+    region: ohio          # mesma região do banco no Neon (us-east-2): consultas rápidas
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/actuator/health
+    autoDeploy: false     # só publica quando você mandar (Manual Deploy), para não gastar minutos de build
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      # jdbc:postgresql://<host-direto-do-neon>/neondb?sslmode=require  (SEM "-pooler" no host)
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_USERNAME
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      # Base64 com pelo menos 32 bytes; gere conforme docs/HOSPEDAGEM.md
+      - key: JWT_SECRET
+        sync: false
+      # O banco do plano gratuito suspende quando parado: poucas conexões e nenhuma ociosa.
+      - key: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
+        value: "5"
+      - key: SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE
+        value: "0"

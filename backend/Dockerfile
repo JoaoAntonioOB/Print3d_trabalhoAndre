@@ -30,7 +30,9 @@ USER spring
 
 EXPOSE 8080
 
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0"
+# Ajustado para planos gratuitos de 512 MB: heap menor, GC serial (menos memória e threads) e
+# compilação em um só nível (partida mais rápida). Pode ser sobrescrito pela variável JAVA_OPTS.
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=65.0 -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k"
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD wget -qO- http://localhost:8080/api/actuator/health | grep -q '"status":"UP"' || exit 1

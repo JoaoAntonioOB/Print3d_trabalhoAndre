@@ -49,4 +49,6 @@ cd ..\mobile; npx tsc --noEmit     # checagem de tipos do app
 Erros seguem `{ "code", "message", "fieldErrors": [{ "field", "message" }] }`.
 
 ## Produção
+Hospedagem gratuita (Render + Neon): veja o [passo a passo](docs/HOSPEDAGEM.md).
+
 Defina `SPRING_PROFILES_ACTIVE=prod`, `DATABASE_URL/USERNAME/PASSWORD` e `JWT_SECRET` (Base64, ≥ 32 bytes: `openssl rand -base64 48`). Em `prod` o Swagger fica desligado e a API não sobe sem `JWT_SECRET`. Use HTTPS. Remova ou troque o usuário e os dados de demonstração (migrations `V2` e `V3`).

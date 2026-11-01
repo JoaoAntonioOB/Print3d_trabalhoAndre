@@ -19,6 +19,8 @@
 
 - **Dashboard ampliado:** `GET /api/dashboard` agora também entrega ticket médio, valor em aberto, peso total de material, vendas dos últimos 6 meses, maiores clientes, uso por material e vencimentos dos próximos 7 dias. Seed de histórico `V4` (19 pedidos nos 5 meses anteriores) para o gráfico de vendas ter série. App: painel com gráfico de colunas mensal, lista de barras (fila, clientes, materiais) e listas de pedidos. 45 testes passando.
 
+- **Hospedagem preparada:** `render.yaml` (API em Ohio, plano gratuito), `Dockerfile` ajustado para 512 MB (testado em contêiner com 512 MB / 0,5 CPU contra o Neon de Ohio: sobe em ~37 s, ~260 MB, sem erros), banco no Neon com as migrations V1–V4 já aplicadas e `docs/HOSPEDAGEM.md`. Falta enviar o código ao GitHub e criar o serviço no Render.
+
 ## Pendências / opcionais
 - Renomear `backend/` → `api/` (a pasta estava travada pela IDE); ajustar caminhos nos docs e no CI.
 - Validar o layout revisado e o Marco 4/5 no iPhone (a revisão visual não pôde ser feita pelo assistente).
