@@ -9,7 +9,7 @@ App mobile (faculdade) que resolve o controle de clientes e pedidos de pequenas 
 
 ## Comandos
 - Banco: `cp .env.example .env` e `docker compose up -d`
-- API: `cd backend && ./mvnw spring-boot:run` (Swagger: http://localhost:8080/api/swagger-ui.html)
+- API: `cd backend; ./mvnw spring-boot:run` (Postgres na 5433; PowerShell 5.1 não aceita `&&`) (Swagger: http://localhost:8080/api/swagger-ui.html)
 - Testes da API: `cd backend && ./mvnw -q test` (precisa de Docker; mostrar só falhas)
 - App: `cd mobile && npx expo start`
 

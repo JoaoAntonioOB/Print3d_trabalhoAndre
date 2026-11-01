@@ -9,9 +9,9 @@ App mobile (React Native/Expo) para donos e operadores de pequenas empresas de i
 ## Rodando a API
 
 ```bash
-cp .env.example .env          # defina POSTGRES_PASSWORD
-docker compose up -d          # PostgreSQL 16
-cd backend && ./mvnw spring-boot:run
+cp .env.example .env          # defina POSTGRES_PASSWORD=print3d (o perfil dev usa essa senha)
+docker compose up -d          # PostgreSQL 16 na porta 5433
+cd backend; ./mvnw spring-boot:run   # no PowerShell 5.1 use ';' (não '&&')
 ```
 
 Swagger: http://localhost:8080/api/swagger-ui.html · login de demonstração: `demo@print3d.com` / `admin123`.

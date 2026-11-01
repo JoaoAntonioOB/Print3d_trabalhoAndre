@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/print3d_mobile}
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5433/print3d_mobile}
     username: ${DATABASE_USERNAME:print3d}
     password: ${DATABASE_PASSWORD:print3d}
 logging:
