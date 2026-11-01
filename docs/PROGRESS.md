@@ -9,10 +9,11 @@
 - **Marco 1 (código pronto):** tela de login (Zod + mensagens da API), token no SecureStore, rotas protegidas (`Stack.Protected`), logout, 401 derruba a sessão, erro de rede com mensagem própria. Contrato do login conferido contra a API real. **Validado no iPhone (Expo Go):** login com o usuário demo abre a tela autenticada.
 - **Marco 2 (código pronto):** `GET /api/cep/{cep}` (ViaCEP via API, timeout 3s, cache em memória; 400/404/503 tratados, testes com HTTP mockado; conferido contra a ViaCEP real). App: lista de clientes com busca e paginação, cadastro/edição com máscaras e CEP que preenche o endereço, detalhe, exclusão com confirmação (409 mostra a mensagem da API). Falta validar no iPhone.
 - **Marco 3 (código pronto):** telas de pedidos — lista com busca e filtro por status (chips), atrasados em destaque, cadastro/edição (cliente via seletor, material, peso, valor, prazo DD/MM/AAAA), detalhe com botões só das transições válidas, cancelamento com confirmação, edição só em PENDENTE/EM_PRODUCAO e exclusão só em PENDENTE/CANCELADO. Atalho "Novo pedido" no detalhe do cliente. Falta validar no iPhone.
+- **Marco 4 (código pronto):** dashboard como tela inicial — cards (clientes, pedidos abertos, faturamento do mês, atrasados), gráfico de barras de pedidos por status (react-native-gifted-charts), atrasados, últimos pedidos, pull-to-refresh, atalhos. Atualiza ao criar/editar/excluir cliente ou pedido. Falta validar no iPhone.
 
 ## Próximo
 - Renomear `backend/` → `api/` se desejado (pasta estava travada pela IDE).
-- Marco 4: dashboard. Marco 5: fechamento.
+- Marco 5: fechamento.
 
 ## Decisões
 - Mantidos nomes em português do domínio (tabelas/campos), como no código herdado.

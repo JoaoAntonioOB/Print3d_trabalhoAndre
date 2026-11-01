@@ -19,6 +19,7 @@ export default function ClientDetail() {
     mutationFn: () => deleteClient(clientId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['clients'] });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.removeQueries({ queryKey: ['client', clientId] });
       router.back();
     },

@@ -134,6 +134,7 @@ export default function ClientForm() {
       editingId !== undefined ? updateClient(editingId, input) : createClient(input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['clients'] });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       if (editingId !== undefined) await queryClient.invalidateQueries({ queryKey: ['client', editingId] });
       router.back();
     },
