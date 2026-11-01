@@ -1,15 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Divider, List, Text } from 'react-native-paper';
+import { Button, Divider, Icon, List, Text } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toApiError } from '../../src/api/http';
 import {
-  canDelete, canEdit, changeOrderStatus, deleteOrder, getOrder, isOpen, NEXT_STATUSES, STATUS_LABEL,
+  canDelete, canEdit, changeOrderStatus, deleteOrder, getOrder, isOpen, NEXT_STATUSES, STATUS_ICON, STATUS_LABEL,
   type OrderStatus,
 } from '../../src/api/orders';
 import { ErrorState, LoadingState } from '../../src/components/ScreenState';
 import { StatusChip } from '../../src/components/StatusChip';
-import { colors, radius, spacing } from '../../src/theme';
+import { colors, layout, radius, spacing } from '../../src/theme';
 import { formatBRL, formatGrams, isoToBr, todayIso } from '../../src/utils/format';
 
 const ACTION_LABEL: Record<OrderStatus, string> = {
@@ -25,6 +26,7 @@ export default function OrderDetail() {
   const orderId = Number(id);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { bottom } = useSafeAreaInsets();
 
   const query = useQuery({ queryKey: ['order', orderId], queryFn: () => getOrder(orderId) });
 
@@ -79,10 +81,15 @@ export default function OrderDetail() {
   const busy = changeStatus.isPending || remove.isPending;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[layout.content, styles.content, { paddingBottom: spacing.xl + bottom }]}>
       <View style={styles.header}>
         <StatusChip status={o.status} />
-        {late ? <Text style={styles.late}>Atrasado</Text> : null}
+        {late ? (
+          <View style={styles.lateRow}>
+            <Icon source="alert-circle-outline" size={16} color={colors.error} />
+            <Text style={styles.late}>Atrasado</Text>
+          </View>
+        ) : null}
       </View>
       <Text variant="headlineSmall" style={styles.title}>{o.descricao}</Text>
       <Text variant="titleLarge" style={styles.value}>{formatBRL(o.valor)}</Text>
@@ -105,11 +112,15 @@ export default function OrderDetail() {
 
       {NEXT_STATUSES[o.status].length > 0 ? (
         <View style={styles.actions}>
-          <Text variant="labelLarge" style={styles.section}>Andamento</Text>
+          <View style={styles.sectionRow}>
+            <Icon source="progress-check" size={18} color={colors.textMuted} />
+            <Text variant="labelLarge" style={styles.section}>Andamento</Text>
+          </View>
           {NEXT_STATUSES[o.status].map((next) => (
             <Button
               key={next}
               mode={next === 'CANCELADO' ? 'outlined' : 'contained'}
+              icon={STATUS_ICON[next]}
               textColor={next === 'CANCELADO' ? colors.error : undefined}
               onPress={() => askStatus(next)}
               disabled={busy}
@@ -122,7 +133,8 @@ export default function OrderDetail() {
           ))}
         </View>
       ) : (
-        <Text style={styles.final}>Pedido {STATUS_LABEL[o.status].toLowerCase()}: não pode mais ser alterado.</Text>
+        <Text style={styles.final}>
+          Pedido {STATUS_LABEL[o.status].toLowerCase()}: não pode mais ser alterado.</Text>
       )}
 
       <View style={styles.actions}>
@@ -160,10 +172,12 @@ const styles = StyleSheet.create({
   content: { padding: spacing.md, paddingBottom: spacing.xl },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   late: { color: colors.error, fontWeight: '700' },
+  lateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   title: { color: colors.text, marginTop: spacing.md },
   value: { color: colors.primary, fontWeight: '700', marginBottom: spacing.md },
   card: { backgroundColor: colors.surface, borderRadius: radius.md, marginTop: 0 },
-  section: { color: colors.textMuted, marginBottom: spacing.sm },
+  section: { color: colors.textMuted },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm },
   actions: { marginTop: spacing.lg },
   button: { marginBottom: spacing.sm },
   final: { color: colors.textMuted, marginTop: spacing.lg, textAlign: 'center' },

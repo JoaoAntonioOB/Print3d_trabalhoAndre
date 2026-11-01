@@ -5,13 +5,15 @@ import { Button, Divider, List } from 'react-native-paper';
 import { deleteClient, getClient } from '../../src/api/clients';
 import { toApiError } from '../../src/api/http';
 import { ErrorState, LoadingState } from '../../src/components/ScreenState';
-import { colors, spacing } from '../../src/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, layout, spacing } from '../../src/theme';
 
 export default function ClientDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const clientId = Number(id);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { bottom } = useSafeAreaInsets();
 
   const query = useQuery({ queryKey: ['client', clientId], queryFn: () => getClient(clientId) });
 
@@ -44,7 +46,7 @@ export default function ClientDetail() {
   const cidade = [e?.bairro, [e?.cidade, e?.estado].filter(Boolean).join('/')].filter(Boolean).join(' · ');
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[layout.content, styles.content, { paddingBottom: spacing.xl + bottom }]}>
       <List.Section style={styles.card}>
         <List.Item title={c.nome} description="Nome" left={(p) => <List.Icon {...p} icon="account-outline" />} />
         <Divider />

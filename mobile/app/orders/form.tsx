@@ -146,7 +146,7 @@ export default function OrderForm() {
 
         <Controller control={control} name="descricao" render={({ field: { value, onChange, onBlur } }) => (
           <View>
-            <TextInput label="Descrição *" mode="outlined" value={value} onChangeText={onChange} onBlur={onBlur}
+            <TextInput label="Descrição *" mode="outlined" left={<TextInput.Icon icon="text-box-outline" />} value={value} onChangeText={onChange} onBlur={onBlur}
               multiline error={!!msg('descricao')} />
             <HelperText type="error" visible={!!msg('descricao')}>{msg('descricao')}</HelperText>
           </View>
@@ -156,10 +156,10 @@ export default function OrderForm() {
           <View>
             <View style={styles.chips}>
               {MATERIALS.map((m) => (
-                <Chip key={m} selected={material?.toUpperCase() === m} onPress={() => onChange(m)} style={styles.chip}>{m}</Chip>
+                <Chip key={m} icon="cube-outline" selected={material?.toUpperCase() === m} onPress={() => onChange(m)} style={styles.chip}>{m}</Chip>
               ))}
             </View>
-            <TextInput label="Material *" mode="outlined" value={value} onChangeText={onChange} onBlur={onBlur}
+            <TextInput label="Material *" mode="outlined" left={<TextInput.Icon icon="cube-outline" />} value={value} onChangeText={onChange} onBlur={onBlur}
               autoCapitalize="characters" error={!!msg('material')} />
             <HelperText type="error" visible={!!msg('material')}>{msg('material')}</HelperText>
           </View>
@@ -167,7 +167,7 @@ export default function OrderForm() {
 
         <Controller control={control} name="pesoGramas" render={({ field: { value, onChange, onBlur } }) => (
           <View>
-            <TextInput label="Peso (g) *" mode="outlined" value={value} onChangeText={onChange} onBlur={onBlur}
+            <TextInput label="Peso (g) *" mode="outlined" left={<TextInput.Icon icon="weight-gram" />} value={value} onChangeText={onChange} onBlur={onBlur}
               keyboardType="decimal-pad" error={!!msg('pesoGramas')} />
             <HelperText type="error" visible={!!msg('pesoGramas')}>{msg('pesoGramas')}</HelperText>
           </View>
@@ -176,14 +176,14 @@ export default function OrderForm() {
         <Controller control={control} name="valor" render={({ field: { value, onChange, onBlur } }) => (
           <View>
             <TextInput label="Valor (R$) *" mode="outlined" value={value} onChangeText={onChange} onBlur={onBlur}
-              keyboardType="decimal-pad" left={<TextInput.Affix text="R$" />} error={!!msg('valor')} />
+              keyboardType="decimal-pad" left={<TextInput.Icon icon="cash" />} right={<TextInput.Affix text="R$" />} error={!!msg('valor')} />
             <HelperText type="error" visible={!!msg('valor')}>{msg('valor')}</HelperText>
           </View>
         )} />
 
         <Controller control={control} name="prazo" render={({ field: { value, onChange, onBlur } }) => (
           <View>
-            <TextInput label="Prazo de entrega *" mode="outlined" value={value}
+            <TextInput label="Prazo de entrega *" mode="outlined" left={<TextInput.Icon icon="calendar-outline" />} value={value}
               onChangeText={(t) => onChange(maskDate(t))} onBlur={onBlur}
               placeholder="DD/MM/AAAA" keyboardType="number-pad" error={!!msg('prazo')} />
             <HelperText type="error" visible={!!msg('prazo')}>{msg('prazo')}</HelperText>
@@ -191,7 +191,7 @@ export default function OrderForm() {
         )} />
 
         <HelperText type="error" visible={!!serverError}>{serverError}</HelperText>
-        <Button mode="contained" onPress={() => void submit()} loading={busy} disabled={busy}>
+        <Button mode="contained" icon={editingId !== undefined ? 'content-save-outline' : 'clipboard-plus-outline'} onPress={() => void submit()} loading={busy} disabled={busy}>
           {editingId !== undefined ? 'Salvar alterações' : 'Criar pedido'}
         </Button>
       </FormScroll>

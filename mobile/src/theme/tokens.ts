@@ -27,3 +27,8 @@ export const statusColors = {
   ENTREGUE: { bg: '#e2dcf7', fg: '#3f308a' },
   CANCELADO: { bg: '#f6d9d6', fg: '#7a1a14' },
 } as const;
+
+/** Largura máxima do conteúdo (tablets/web): centraliza em vez de esticar. */
+export const layout = {
+  content: { width: '100%', maxWidth: 720, alignSelf: 'center' },
+} as const;

@@ -3,13 +3,15 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, FAB, List, Searchbar } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toApiError } from '../../src/api/http';
 import { listClients } from '../../src/api/clients';
 import { EmptyState, ErrorState, LoadingState } from '../../src/components/ScreenState';
-import { colors, spacing } from '../../src/theme';
+import { colors, layout, spacing } from '../../src/theme';
 
 export default function ClientsList() {
   const router = useRouter();
+  const { bottom } = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [busca, setBusca] = useState('');
 
@@ -35,9 +37,10 @@ export default function ClientsList() {
     body = <ErrorState message={toApiError(query.error).message} onRetry={() => void query.refetch()} />;
   } else if (clients.length === 0) {
     body = busca ? (
-      <EmptyState message={`Nenhum cliente encontrado para "${busca}".`} />
+      <EmptyState icon="magnify" message={`Nenhum cliente encontrado para "${busca}".`} />
     ) : (
       <EmptyState
+        icon="account-group-outline"
         message="Nenhum cliente cadastrado ainda."
         actionLabel="Cadastrar cliente"
         onAction={() => router.push('/clients/form')}
@@ -57,7 +60,7 @@ export default function ClientsList() {
         onEndReached={() => query.hasNextPage && !query.isFetchingNextPage && void query.fetchNextPage()}
         onEndReachedThreshold={0.4}
         ListFooterComponent={query.isFetchingNextPage ? <ActivityIndicator style={styles.footer} /> : undefined}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[layout.content, { paddingBottom: 96 + bottom }]}
         renderItem={({ item }) => (
           <List.Item
             title={item.nome}
@@ -81,7 +84,7 @@ export default function ClientsList() {
         style={styles.search}
       />
       {body}
-      <FAB icon="plus" label="Novo" style={styles.fab} onPress={() => router.push('/clients/form')} />
+      <FAB color={colors.onPrimary} icon="account-plus-outline" label="Novo cliente" style={[styles.fab, { bottom: spacing.md + bottom }]} onPress={() => router.push('/clients/form')} />
     </View>
   );
 }
@@ -89,8 +92,7 @@ export default function ClientsList() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   search: { margin: spacing.md, backgroundColor: colors.surface },
-  listContent: { paddingBottom: 96 },
   item: { backgroundColor: colors.surface, marginHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: 10 },
   footer: { margin: spacing.md },
-  fab: { position: 'absolute', right: spacing.md, bottom: spacing.lg, backgroundColor: colors.primary },
+  fab: { position: 'absolute', right: spacing.md, backgroundColor: colors.primary },
 });

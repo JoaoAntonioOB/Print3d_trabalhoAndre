@@ -4,7 +4,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm, type Control, type FieldPath } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
-import { Button, HelperText, Text, TextInput } from 'react-native-paper';
+import { Button, HelperText, Icon, Text, TextInput } from 'react-native-paper';
 import { z } from 'zod';
 import { createClient, getClient, lookupCep, updateClient, type Client, type ClientInput } from '../../src/api/clients';
 import { toApiError } from '../../src/api/http';
@@ -72,9 +72,10 @@ type FieldProps = {
   mask?: (v: string) => string;
   inputRef?: React.Ref<InputHandle>;
   onChangeExtra?: (v: string) => void;
+  icon?: string;
 } & Omit<React.ComponentProps<typeof TextInput>, 'value' | 'onChangeText' | 'error' | 'ref'>;
 
-function Field({ control, name, label, error, mask, inputRef, onChangeExtra, ...rest }: FieldProps) {
+function Field({ control, name, label, error, mask, inputRef, onChangeExtra, icon, ...rest }: FieldProps) {
   return (
     <Controller
       control={control}
@@ -93,6 +94,7 @@ function Field({ control, name, label, error, mask, inputRef, onChangeExtra, ...
               onChangeExtra?.(v);
             }}
             error={!!error}
+            left={icon ? <TextInput.Icon icon={icon} /> : undefined}
             {...rest}
           />
           <HelperText type="error" visible={!!error}>{error}</HelperText>
@@ -186,16 +188,20 @@ export default function ClientForm() {
     <>
       <Stack.Screen options={{ title: editingId !== undefined ? 'Editar cliente' : 'Novo cliente' }} />
       <FormScroll>
-        <Field control={control} name="nome" label="Nome *" error={msg('nome')} autoCapitalize="words" />
-        <Field control={control} name="telefone" label="Telefone" error={msg('telefone')} mask={maskPhone} keyboardType="phone-pad" />
-        <Field control={control} name="email" label="E-mail" error={msg('email')} autoCapitalize="none" keyboardType="email-address" />
-        <Field control={control} name="cpfCnpj" label="CPF/CNPJ" error={msg('cpfCnpj')} mask={maskCpfCnpj} keyboardType="number-pad" />
+        <Field control={control} name="nome" label="Nome *" icon="account-outline" error={msg('nome')} autoCapitalize="words" />
+        <Field control={control} name="telefone" label="Telefone" icon="phone-outline" error={msg('telefone')} mask={maskPhone} keyboardType="phone-pad" />
+        <Field control={control} name="email" label="E-mail" icon="email-outline" error={msg('email')} autoCapitalize="none" keyboardType="email-address" />
+        <Field control={control} name="cpfCnpj" label="CPF/CNPJ" icon="card-account-details-outline" error={msg('cpfCnpj')} mask={maskCpfCnpj} keyboardType="number-pad" />
 
-        <Text variant="titleSmall" style={styles.section}>Endereço</Text>
+        <View style={styles.sectionRow}>
+          <Icon source="map-marker-radius-outline" size={20} color={colors.primary} />
+          <Text variant="titleSmall" style={styles.section}>Endereço</Text>
+        </View>
         <Field
           control={control}
           name="cep"
           label="CEP"
+          icon="map-marker-outline"
           error={msg('cep')}
           mask={maskCep}
           keyboardType="number-pad"
@@ -203,15 +209,15 @@ export default function ClientForm() {
           right={cepLoading ? <TextInput.Icon icon="loading" /> : undefined}
         />
         <HelperText type="info" visible={!!cepMessage} style={styles.cepMessage}>{cepMessage}</HelperText>
-        <Field control={control} name="logradouro" label="Logradouro" error={msg('logradouro')} />
-        <Field control={control} name="numero" label="Número" error={msg('numero')} inputRef={numeroRef} />
-        <Field control={control} name="complemento" label="Complemento" error={msg('complemento')} />
-        <Field control={control} name="bairro" label="Bairro" error={msg('bairro')} />
-        <Field control={control} name="cidade" label="Cidade" error={msg('cidade')} />
-        <Field control={control} name="estado" label="UF" error={msg('estado')} autoCapitalize="characters" maxLength={2} />
+        <Field control={control} name="logradouro" label="Logradouro" icon="road-variant" error={msg('logradouro')} />
+        <Field control={control} name="numero" label="Número" icon="numeric" error={msg('numero')} inputRef={numeroRef} />
+        <Field control={control} name="complemento" label="Complemento" icon="home-plus-outline" error={msg('complemento')} />
+        <Field control={control} name="bairro" label="Bairro" icon="home-group" error={msg('bairro')} />
+        <Field control={control} name="cidade" label="Cidade" icon="city-variant-outline" error={msg('cidade')} />
+        <Field control={control} name="estado" label="UF" icon="map-outline" error={msg('estado')} autoCapitalize="characters" maxLength={2} />
 
         <HelperText type="error" visible={!!serverError}>{serverError}</HelperText>
-        <Button mode="contained" onPress={() => void submit()} loading={busy} disabled={busy}>
+        <Button mode="contained" icon={editingId !== undefined ? 'content-save-outline' : 'account-plus-outline'} onPress={() => void submit()} loading={busy} disabled={busy}>
           {editingId !== undefined ? 'Salvar alterações' : 'Cadastrar'}
         </Button>
       </FormScroll>
@@ -220,6 +226,7 @@ export default function ClientForm() {
 }
 
 const styles = StyleSheet.create({
-  section: { color: colors.textMuted, marginTop: spacing.md, marginBottom: spacing.sm },
+  section: { color: colors.text, fontWeight: '600' },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md, marginBottom: spacing.sm },
   cepMessage: { marginTop: -spacing.md },
 });

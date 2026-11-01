@@ -13,6 +13,14 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
   CANCELADO: 'Cancelado',
 };
 
+export const STATUS_ICON: Record<OrderStatus, string> = {
+  PENDENTE: 'clock-outline',
+  EM_PRODUCAO: 'printer-3d',
+  CONCLUIDO: 'check-circle-outline',
+  ENTREGUE: 'truck-delivery-outline',
+  CANCELADO: 'close-circle-outline',
+};
+
 /** Espelha as transições válidas da API (a API continua sendo a fonte da verdade). */
 export const NEXT_STATUSES: Record<OrderStatus, OrderStatus[]> = {
   PENDENTE: ['EM_PRODUCAO', 'CANCELADO'],

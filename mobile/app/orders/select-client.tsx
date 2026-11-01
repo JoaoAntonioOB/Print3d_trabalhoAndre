@@ -6,7 +6,7 @@ import { List, Searchbar } from 'react-native-paper';
 import { listClients } from '../../src/api/clients';
 import { toApiError } from '../../src/api/http';
 import { EmptyState, ErrorState, LoadingState } from '../../src/components/ScreenState';
-import { colors, radius, spacing } from '../../src/theme';
+import { colors, layout, radius, spacing } from '../../src/theme';
 import { setPickedClient } from '../../src/utils/pickerBus';
 
 /** Tela cheia para escolher o cliente do pedido (evita lista dentro de diálogo com teclado). */
@@ -36,6 +36,7 @@ export default function SelectClient() {
   else if (clients.length === 0) {
     body = (
       <EmptyState
+        icon={busca ? 'magnify' : 'account-group-outline'}
         message={busca ? `Nenhum cliente encontrado para "${busca}".` : 'Nenhum cliente cadastrado. Cadastre um cliente primeiro.'}
         actionLabel={busca ? undefined : 'Cadastrar cliente'}
         onAction={busca ? undefined : () => router.push('/clients/form')}
@@ -49,7 +50,7 @@ export default function SelectClient() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         automaticallyAdjustKeyboardInsets
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[layout.content, styles.list]}
         renderItem={({ item }) => (
           <List.Item
             title={item.nome}
