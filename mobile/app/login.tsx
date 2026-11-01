@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { z } from 'zod';
 import { toApiError } from '../src/api/http';
 import { useAuth } from '../src/auth/AuthContext';
-import { colors, layout, spacing } from '../src/theme';
+import { fonts, colors, layout, spacing } from '../src/theme';
 
 const schema = z.object({
   email: z.string().trim().min(1, 'Informe o e-mail').email('E-mail inválido'),
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   container: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg, paddingBottom: 120 },
   logo: { alignSelf: 'center', width: 80, height: 80, borderRadius: 24, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
-  title: { color: colors.primary, fontWeight: '700', textAlign: 'center' },
+  title: { color: colors.text, fontFamily: fonts.semibold, textAlign: 'center' },
   muted: { color: colors.textMuted, textAlign: 'center', marginTop: spacing.sm },
   form: { marginTop: spacing.xl },
   serverError: { marginBottom: spacing.sm },

@@ -8,7 +8,7 @@ import { toApiError } from '../../src/api/http';
 import { listClients } from '../../src/api/clients';
 import { EmptyState, ErrorState, LoadingState } from '../../src/components/ScreenState';
 import { Screen } from '../../src/components/Screen';
-import { colors, layout, spacing } from '../../src/theme';
+import { colors, layout, radius, spacing } from '../../src/theme';
 
 export default function ClientsList() {
   const router = useRouter();
@@ -79,7 +79,7 @@ export default function ClientsList() {
   return (
     <Screen title="Clientes" menu>
       <View style={styles.searchRow}>
-        <Searchbar placeholder="Buscar cliente" value={search} onChangeText={setSearch} style={styles.search} />
+        <Searchbar placeholder="Buscar cliente" value={search} onChangeText={setSearch} style={styles.search} elevation={0} />
         <Button mode="contained" icon="plus" onPress={() => router.push('/clients/form')} style={styles.newButton} contentStyle={styles.newContent}>
           Novo
         </Button>
@@ -92,9 +92,9 @@ export default function ClientsList() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
-  search: { flex: 1, backgroundColor: colors.surface },
+  search: { flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md },
   newButton: { borderRadius: 28 },
   newContent: { height: 48 },
-  item: { backgroundColor: colors.surface, marginHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: 10 },
+  item: { backgroundColor: colors.surface, marginHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
   footer: { margin: spacing.md },
 });

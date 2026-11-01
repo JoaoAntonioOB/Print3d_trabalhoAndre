@@ -11,7 +11,7 @@ import { toApiError } from '../../src/api/http';
 import { FormScroll } from '../../src/components/FormScroll';
 import { Screen } from '../../src/components/Screen';
 import { LoadingState } from '../../src/components/ScreenState';
-import { colors, spacing } from '../../src/theme';
+import { fonts, colors, spacing } from '../../src/theme';
 import { maskCep, maskCpfCnpj, maskPhone, onlyDigits } from '../../src/utils/masks';
 
 const schema = z.object({
@@ -291,7 +291,7 @@ export default function ClientForm() {
 }
 
 const styles = StyleSheet.create({
-  section: { color: colors.text, fontWeight: '600' },
+  section: { color: colors.text, fontFamily: fonts.semibold },
   sectionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md, marginBottom: spacing.sm },
   cepMessage: { marginTop: -spacing.md },
 });

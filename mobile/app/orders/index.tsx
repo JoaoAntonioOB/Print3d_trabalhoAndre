@@ -9,7 +9,7 @@ import { toApiError } from '../../src/api/http';
 import { EmptyState, ErrorState, LoadingState } from '../../src/components/ScreenState';
 import { StatusChip } from '../../src/components/StatusChip';
 import { Screen } from '../../src/components/Screen';
-import { colors, layout, radius, spacing } from '../../src/theme';
+import { fonts, colors, layout, radius, spacing } from '../../src/theme';
 import { formatBRL, isoToBr, todayIso } from '../../src/utils/format';
 
 export default function OrdersList() {
@@ -101,7 +101,7 @@ export default function OrdersList() {
   return (
     <Screen title="Pedidos" menu>
       <View style={styles.searchRow}>
-        <Searchbar placeholder="Buscar pedido" value={search} onChangeText={setSearch} style={styles.search} />
+        <Searchbar placeholder="Buscar pedido" value={search} onChangeText={setSearch} style={styles.search} elevation={0} />
         <Button mode="contained" icon="plus" onPress={() => router.push('/orders/form')} style={styles.newButton} contentStyle={styles.newContent}>
           Novo
         </Button>
@@ -127,7 +127,7 @@ export default function OrdersList() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, paddingBottom: spacing.sm },
-  search: { flex: 1, backgroundColor: colors.surface },
+  search: { flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md },
   newButton: { borderRadius: 28 },
   newContent: { height: 48 },
   filtersScroll: { flexGrow: 0, flexShrink: 0 },
@@ -137,12 +137,12 @@ const styles = StyleSheet.create({
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   filter: { marginRight: spacing.sm },
   listContent: {},
-  card: { backgroundColor: colors.surface, marginHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: radius.md, padding: spacing.md },
+  card: { backgroundColor: colors.surface, marginHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   footerRow: { marginTop: spacing.sm },
   title: { flex: 1, color: colors.text, marginRight: spacing.sm },
-  value: { color: colors.primary, fontWeight: '700' },
+  value: { color: colors.text, fontFamily: fonts.semibold },
   muted: { color: colors.textMuted },
-  late: { color: colors.error, fontWeight: '600' },
+  late: { color: colors.error, fontFamily: fonts.semibold },
   footer: { margin: spacing.md },
 });

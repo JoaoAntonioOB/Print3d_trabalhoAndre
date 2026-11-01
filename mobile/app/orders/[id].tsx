@@ -11,7 +11,7 @@ import {
 import { ErrorState, LoadingState } from '../../src/components/ScreenState';
 import { StatusChip } from '../../src/components/StatusChip';
 import { Screen } from '../../src/components/Screen';
-import { colors, layout, radius, spacing } from '../../src/theme';
+import { fonts, colors, layout, radius, spacing } from '../../src/theme';
 import { formatBRL, formatGrams, isoToBr, todayIso } from '../../src/utils/format';
 
 const ACTION_LABEL: Record<OrderStatus, string> = {
@@ -174,11 +174,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.md, paddingBottom: spacing.xl },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  late: { color: colors.error, fontWeight: '700' },
+  late: { color: colors.error, fontFamily: fonts.semibold },
   lateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   title: { color: colors.text, marginTop: spacing.md },
-  value: { color: colors.primary, fontWeight: '700', marginBottom: spacing.md },
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, marginTop: 0 },
+  value: { color: colors.text, fontFamily: fonts.semibold, marginBottom: spacing.md },
+  card: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, marginTop: 0 },
   section: { color: colors.textMuted },
   sectionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm },
   actions: { marginTop: spacing.lg },

@@ -7,7 +7,7 @@ import { toApiError } from '../../src/api/http';
 import { ErrorState, LoadingState } from '../../src/components/ScreenState';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '../../src/components/Screen';
-import { colors, layout, spacing } from '../../src/theme';
+import { colors, layout, radius, spacing } from '../../src/theme';
 
 export default function ClientDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -103,7 +103,7 @@ export default function ClientDetail() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.md },
-  card: { backgroundColor: colors.surface, borderRadius: 10, marginTop: 0 },
+  card: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, marginTop: 0 },
   actions: { marginTop: spacing.lg },
   secondary: { marginBottom: spacing.sm },
   delete: { marginTop: spacing.sm, borderColor: colors.error },

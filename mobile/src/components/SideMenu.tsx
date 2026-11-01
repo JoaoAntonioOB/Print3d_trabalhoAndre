@@ -4,7 +4,7 @@ import { Animated, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDime
 import { Divider, Drawer, Icon, IconButton, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthContext';
-import { colors, spacing } from '../theme';
+import { fonts, colors, spacing } from '../theme';
 
 type MenuState = { openMenu: () => void; closeMenu: () => void };
 const MenuContext = createContext<MenuState | null>(null);
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   panel: { backgroundColor: colors.surface, height: '100%' },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
   logo: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
-  userName: { color: colors.text, fontWeight: '600' },
+  userName: { color: colors.text, fontFamily: fonts.semibold },
   muted: { color: colors.textMuted },
   list: { paddingVertical: spacing.sm },
   logout: { marginHorizontal: spacing.sm, marginVertical: spacing.sm },

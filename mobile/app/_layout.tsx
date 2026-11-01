@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import {
+  IBMPlexSans_400Regular,
+  IBMPlexSans_500Medium,
+  IBMPlexSans_600SemiBold,
+  IBMPlexSans_700Bold,
+} from '@expo-google-fonts/ibm-plex-sans';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -42,8 +48,14 @@ function RootStack() {
 
 export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient());
-  // Fonte dos ícones carregada antes da primeira tela (evita o quadrado com "?").
-  const [fontsLoaded, fontError] = useFonts(MaterialCommunityIcons.font);
+  // Ícones e fonte do app carregados antes da primeira tela (evita o quadrado com "?" e troca de fonte).
+  const [fontsLoaded, fontError] = useFonts({
+    ...MaterialCommunityIcons.font,
+    IBMPlexSans_400Regular,
+    IBMPlexSans_500Medium,
+    IBMPlexSans_600SemiBold,
+    IBMPlexSans_700Bold,
+  });
   if (!fontsLoaded && !fontError) return null;
   return (
     <QueryClientProvider client={queryClient}>

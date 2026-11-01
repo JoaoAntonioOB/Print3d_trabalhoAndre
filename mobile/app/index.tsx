@@ -1,205 +1,213 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { BarChart } from 'react-native-gifted-charts';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Icon, Text } from 'react-native-paper';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { getDashboard } from '../src/api/dashboard';
 import { toApiError } from '../src/api/http';
 import { ORDER_STATUSES, STATUS_LABEL, type Order } from '../src/api/orders';
 import { useAuth } from '../src/auth/AuthContext';
+import { Screen } from '../src/components/Screen';
 import { ErrorState, LoadingState } from '../src/components/ScreenState';
-import { MenuButton } from '../src/components/SideMenu';
 import { StatusChip } from '../src/components/StatusChip';
-import { colors, layout, radius, spacing, statusColors } from '../src/theme';
+import { colors, fonts, layout, radius, spacing } from '../src/theme';
 import { formatBRL, isoToBr } from '../src/utils/format';
 
-const SHORT: Record<string, string> = {
-  PENDENTE: 'Pend.', EM_PRODUCAO: 'Prod.', CONCLUIDO: 'Concl.', ENTREGUE: 'Entr.', CANCELADO: 'Canc.',
-};
+const num = { fontVariant: ['tabular-nums'] as const };
 
-function StatCard({ icon, tint, label, value, onPress }: {
-  icon: string;
-  tint: { bg: string; fg: string };
-  label: string;
-  value: string;
-  onPress?: () => void;
-}) {
+/** Linha de lista de pedidos: quem e o quê à esquerda, valor e status à direita. */
+function OrderRow({ order, last, onPress }: { order: Order; last: boolean; onPress: () => void }) {
   return (
-    <Pressable style={styles.stat} onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? 'button' : undefined}>
-      <View style={[styles.statIcon, { backgroundColor: tint.bg }]}>
-        <Icon source={icon} size={22} color={tint.fg} />
-      </View>
-      <Text variant="headlineSmall" style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
-      <Text variant="bodySmall" style={styles.muted} numberOfLines={1}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function SectionTitle({ icon, children }: { icon: string; children: string }) {
-  return (
-    <View style={styles.sectionRow}>
-      <Icon source={icon} size={20} color={colors.primary} />
-      <Text variant="titleMedium" style={styles.sectionText}>{children}</Text>
-    </View>
-  );
-}
-
-function OrderRow({ order, onPress }: { order: Order; onPress: () => void }) {
-  return (
-    <Pressable style={styles.orderRow} onPress={onPress} accessibilityRole="button">
+    <Pressable
+      style={[styles.orderRow, !last && styles.rowRule]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${order.descricao}, ${order.clienteNome}`}
+    >
       <View style={styles.flex}>
         <Text variant="titleSmall" numberOfLines={1} style={styles.text}>{order.descricao}</Text>
-        <Text variant="bodySmall" style={styles.muted} numberOfLines={1}>
+        <Text variant="bodySmall" numberOfLines={1} style={styles.muted}>
           {order.clienteNome} · prazo {isoToBr(order.prazo)}
         </Text>
       </View>
       <View style={styles.orderRight}>
-        <Text variant="titleSmall" style={styles.value}>{formatBRL(order.valor)}</Text>
+        <Text variant="titleSmall" style={[styles.money, num]}>{formatBRL(order.valor)}</Text>
         <StatusChip status={order.status} />
       </View>
     </Pressable>
   );
 }
 
+function Section({ title, count, children }: { title: string; count?: number; children: React.ReactNode }) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHead}>
+        <Text variant="titleMedium" style={styles.sectionTitle}>{title}</Text>
+        {count ? <Text style={[styles.sectionCount, num]}>{count}</Text> : null}
+      </View>
+      {children}
+    </View>
+  );
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const router = useRouter();
-  const { width } = useWindowDimensions();
-
   const query = useQuery({ queryKey: ['dashboard'], queryFn: getDashboard });
 
-  if (query.isPending) return <LoadingState />;
+  if (query.isPending) {
+    return <Screen title="Painel" menu><LoadingState /></Screen>;
+  }
   if (query.isError) {
-    return <ErrorState message={toApiError(query.error).message} onRetry={() => void query.refetch()} />;
+    return (
+      <Screen title="Painel" menu>
+        <ErrorState message={toApiError(query.error).message} onRetry={() => void query.refetch()} />
+      </Screen>
+    );
   }
 
   const d = query.data;
   const openOrder = (o: Order) => router.push({ pathname: '/orders/[id]', params: { id: String(o.id) } });
-
-  const chartData = ORDER_STATUSES.map((s) => ({
-    value: d.pedidosPorStatus[s] ?? 0,
-    label: SHORT[s],
-    frontColor: statusColors[s].fg,
-    topLabelComponent: () => <Text style={styles.barTop}>{d.pedidosPorStatus[s] ?? 0}</Text>,
-  }));
-  const hasOrders = chartData.some((c) => c.value > 0);
-  // largura útil do cartão (tela limitada ao maxWidth, menos paddings do conteúdo e do cartão)
-  const chartWidth = Math.min(width, 720) - spacing.md * 4;
-  const barWidth = Math.floor((chartWidth - 8) / 8);
-  const barSpacing = Math.floor(barWidth * 0.6);
+  const count = (s: (typeof ORDER_STATUSES)[number]) => d.pedidosPorStatus[s] ?? 0;
+  const maxCount = Math.max(1, ...ORDER_STATUSES.map(count));
+  const firstName = user?.nome?.split(' ')[0];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-    <ScrollView
-      contentContainerStyle={[layout.content, styles.content]}
-      refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} />}
-    >
-      <View style={styles.header}>
-        <MenuButton />
-        <View style={styles.flex}>
-          <Text variant="bodyMedium" style={styles.muted}>Olá,</Text>
-          <Text variant="headlineSmall" style={styles.title} numberOfLines={1}>{user?.nome}</Text>
-        </View>
-      </View>
-
-      <View style={styles.statsRow}>
-        <StatCard icon="account-group-outline" tint={statusColors.ENTREGUE} label="Clientes" value={String(d.totalClientes)} onPress={() => router.push('/clients')} />
-        <StatCard icon="printer-3d" tint={statusColors.EM_PRODUCAO} label="Pedidos abertos" value={String(d.pedidosAbertos)} onPress={() => router.push('/orders')} />
-      </View>
-      <View style={styles.statsRow}>
-        <StatCard icon="cash-multiple" tint={statusColors.CONCLUIDO} label="Faturamento do mês" value={formatBRL(d.faturamentoMes)} />
-        <StatCard icon="alert-circle-outline" tint={statusColors.CANCELADO} label="Atrasados" value={String(d.totalAtrasados)} onPress={() => router.push('/orders')} />
-      </View>
-
-      <SectionTitle icon="chart-bar">Pedidos por status</SectionTitle>
-      <View style={styles.card}>
-        {hasOrders ? (
-          <BarChart
-            data={chartData}
-            width={chartWidth}
-            height={150}
-            barWidth={barWidth}
-            spacing={barSpacing}
-            initialSpacing={8}
-            endSpacing={0}
-            yAxisLabelWidth={0}
-            noOfSections={3}
-            hideRules
-            yAxisThickness={0}
-            xAxisThickness={1}
-            xAxisColor={colors.border}
-            hideYAxisText
-            barBorderTopLeftRadius={4}
-            barBorderTopRightRadius={4}
-            xAxisLabelTextStyle={styles.axisLabel}
-            isAnimated={false}
-            disableScroll
-          />
-        ) : (
-          <Text style={styles.muted}>Ainda não há pedidos para exibir.</Text>
-        )}
-        <View style={styles.legend}>
-          {ORDER_STATUSES.map((s) => (
-            <View key={s} style={styles.legendItem}>
-              <View style={[styles.dot, { backgroundColor: statusColors[s].fg }]} />
-              <Text variant="bodySmall" style={styles.text}>{STATUS_LABEL[s]}: {d.pedidosPorStatus[s] ?? 0}</Text>
+    <Screen title="Painel" menu>
+      <ScrollView
+        contentContainerStyle={[layout.content, styles.content]}
+        refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} />}
+      >
+        {/* A pergunta da tela: o que está na fila de produção e o que está atrasado? */}
+        <Pressable style={styles.lead} onPress={() => router.push('/orders')} accessibilityRole="button">
+          <Text variant="bodyMedium" style={styles.muted}>Pedidos em aberto{firstName ? ` · ${firstName}` : ''}</Text>
+          <Text style={[styles.leadValue, num]}>{d.pedidosAbertos}</Text>
+          <Text variant="bodyMedium" style={[styles.muted, num]}>
+            {count('EM_PRODUCAO')} em produção · {count('PENDENTE')} pendentes
+          </Text>
+          {d.totalAtrasados > 0 ? (
+            <View style={styles.alert}>
+              <Icon source="alert-circle-outline" size={18} color={colors.error} />
+              <Text variant="bodyMedium" style={styles.alertText}>
+                {d.totalAtrasados} {d.totalAtrasados === 1 ? 'pedido atrasado' : 'pedidos atrasados'}
+              </Text>
             </View>
-          ))}
-        </View>
-      </View>
+          ) : null}
+        </Pressable>
 
-      <SectionTitle icon="alert-outline">
-        {`Pedidos atrasados${d.totalAtrasados > 0 ? ` (${d.totalAtrasados})` : ''}`}
-      </SectionTitle>
-      <View style={styles.card}>
-        {d.pedidosAtrasados.length === 0 ? (
-          <View style={styles.emptyRow}>
-            <Icon source="check-circle-outline" size={20} color={colors.secondary} />
-            <Text style={styles.muted}>Nenhum pedido atrasado.</Text>
+        {/* Números de apoio: um bloco com linhas finas, sem azulejos. */}
+        <View style={styles.panel}>
+          <Pressable style={[styles.kpiRow, styles.rowRule]} onPress={() => router.push('/clients')} accessibilityRole="button">
+            <Text variant="bodyMedium" style={styles.muted}>Clientes</Text>
+            <Text variant="titleMedium" style={[styles.kpiValue, num]}>{d.totalClientes}</Text>
+          </Pressable>
+          <View style={[styles.kpiRow, styles.rowRule]}>
+            <Text variant="bodyMedium" style={styles.muted}>Faturamento do mês</Text>
+            <Text variant="titleMedium" style={[styles.kpiValue, num]}>{formatBRL(d.faturamentoMes)}</Text>
           </View>
-        ) : (
-          d.pedidosAtrasados.map((o) => <OrderRow key={o.id} order={o} onPress={() => openOrder(o)} />)
-        )}
-      </View>
+          <View style={styles.kpiRow}>
+            <Text variant="bodyMedium" style={styles.muted}>Atrasados</Text>
+            <Text
+              variant="titleMedium"
+              style={[styles.kpiValue, num, d.totalAtrasados > 0 && { color: colors.error }]}
+            >
+              {d.totalAtrasados}
+            </Text>
+          </View>
+        </View>
 
-      <SectionTitle icon="history">Últimos pedidos</SectionTitle>
-      <View style={styles.card}>
-        {d.ultimosPedidos.length === 0 ? (
-          <Text style={styles.muted}>Nenhum pedido ainda.</Text>
-        ) : (
-          d.ultimosPedidos.map((o) => <OrderRow key={o.id} order={o} onPress={() => openOrder(o)} />)
-        )}
-      </View>
+        {/* Lista de barras: uma série, uma cor; o destaque fica no que está sendo impresso agora. */}
+        <Section title="Fila de produção">
+          <View style={styles.panel}>
+            {ORDER_STATUSES.map((s, i) => (
+              <View key={s} style={[styles.barRow, i < ORDER_STATUSES.length - 1 && styles.rowRule]}>
+                <Text variant="bodyMedium" style={styles.barLabel}>{STATUS_LABEL[s]}</Text>
+                <View style={styles.barTrack}>
+                  <View
+                    style={[
+                      styles.barFill,
+                      {
+                        width: `${(count(s) / maxCount) * 100}%`,
+                        backgroundColor: s === 'EM_PRODUCAO' ? colors.accent : colors.control,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text variant="titleSmall" style={[styles.barValue, num]}>{count(s)}</Text>
+              </View>
+            ))}
+          </View>
+        </Section>
 
-    </ScrollView>
-    </SafeAreaView>
+        <Section title="Atrasados" count={d.totalAtrasados}>
+          <View style={styles.panel}>
+            {d.pedidosAtrasados.length === 0 ? (
+              <Text style={styles.empty}>Nenhum pedido atrasado.</Text>
+            ) : (
+              d.pedidosAtrasados.map((o, i) => (
+                <OrderRow key={o.id} order={o} last={i === d.pedidosAtrasados.length - 1} onPress={() => openOrder(o)} />
+              ))
+            )}
+          </View>
+        </Section>
+
+        <Section title="Últimos pedidos">
+          <View style={styles.panel}>
+            {d.ultimosPedidos.length === 0 ? (
+              <Text style={styles.empty}>Nenhum pedido ainda. Abra Pedidos e toque em Novo.</Text>
+            ) : (
+              d.ultimosPedidos.map((o, i) => (
+                <OrderRow key={o.id} order={o} last={i === d.ultimosPedidos.length - 1} onPress={() => openOrder(o)} />
+              ))
+            )}
+          </View>
+        </Section>
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.md, paddingBottom: spacing.xl },
-  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg, marginBottom: spacing.sm },
-  sectionText: { color: colors.text, fontWeight: '600' },
-  emptyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  statIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.md, marginLeft: -spacing.sm },
-  title: { color: colors.primary, fontWeight: '700' },
+  content: { padding: spacing.md, paddingBottom: spacing.xl, gap: spacing.md },
   text: { color: colors.text },
   muted: { color: colors.textMuted },
-  value: { color: colors.primary, fontWeight: '700' },
-  statsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
-  stat: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md },
-  statValue: { color: colors.primary, fontWeight: '700' },
-  section: { color: colors.text, marginTop: spacing.lg, marginBottom: spacing.sm },
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md },
-  barTop: { color: colors.text, fontSize: 12, fontWeight: '600', marginBottom: 2 },
-  axisLabel: { color: colors.textMuted, fontSize: 11 },
-  legend: { flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.md, gap: spacing.sm },
-  legendItem: { flexDirection: 'row', alignItems: 'center', marginRight: spacing.sm },
-  dot: { width: 10, height: 10, borderRadius: 5, marginRight: spacing.xs },
-  orderRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, gap: spacing.sm },
+  money: { color: colors.text, fontFamily: fonts.semibold },
+  rowRule: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.rule },
+
+  lead: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  leadValue: { color: colors.text, fontFamily: fonts.semibold, fontSize: 40, lineHeight: 46 },
+  alert: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
+  alertText: { color: colors.error, fontFamily: fonts.medium },
+
+  panel: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+  },
+  kpiRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 48 },
+  kpiValue: { color: colors.text, fontFamily: fonts.medium },
+
+  section: { gap: spacing.sm },
+  sectionHead: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, marginTop: spacing.sm },
+  sectionTitle: { color: colors.text, fontFamily: fonts.semibold },
+  sectionCount: { color: colors.error, fontFamily: fonts.medium, fontSize: 14 },
+
+  barRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 44 },
+  barLabel: { width: 96, color: colors.text },
+  barTrack: { flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.raised, overflow: 'hidden' },
+  barFill: { height: 8, borderRadius: 4 },
+  barValue: { width: 28, textAlign: 'right', color: colors.text },
+
+  orderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
   orderRight: { alignItems: 'flex-end', gap: spacing.xs },
+  empty: { color: colors.textMuted, paddingVertical: spacing.md },
 });

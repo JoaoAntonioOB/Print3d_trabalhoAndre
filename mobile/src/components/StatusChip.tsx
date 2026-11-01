@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Icon } from 'react-native-paper';
 import { STATUS_ICON, STATUS_LABEL, type OrderStatus } from '../api/orders';
-import { radius, spacing, statusColors } from '../theme';
+import { fonts, radius, spacing, statusColors } from '../theme';
 
 export function StatusChip({ status }: { status: OrderStatus }) {
   const c = statusColors[status];
@@ -21,7 +21,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: spacing.xs,
-    borderRadius: radius.lg,
+    borderRadius: radius.pill,
   },
-  text: { fontSize: 12, fontWeight: '600' },
+  text: { fontSize: 12, fontFamily: fonts.semibold },
 });

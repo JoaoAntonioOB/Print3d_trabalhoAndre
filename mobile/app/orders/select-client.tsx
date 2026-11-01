@@ -80,5 +80,5 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   search: { margin: spacing.md, backgroundColor: colors.surface },
   list: { paddingBottom: 160 },
-  item: { backgroundColor: colors.surface, marginHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: radius.md },
+  item: { backgroundColor: colors.surface, marginHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
 });

@@ -10,7 +10,7 @@ App mobile (React Native/Expo) que centraliza **clientes, pedidos e indicadores*
 - login seguro (só quem tem conta acessa);
 - cadastro de clientes com **endereço preenchido automaticamente pelo CEP** e **dados da empresa preenchidos pelo CNPJ**;
 - pedidos com **ciclo de status controlado** (Pendente → Em produção → Concluído → Entregue, ou Cancelado);
-- **dashboard** com clientes, pedidos abertos, faturamento do mês, pedidos atrasados e gráfico por status.
+- **dashboard** que responde primeiro "o que está na fila e o que está atrasado?", com clientes, faturamento do mês, fila de produção por status (barras) e últimos pedidos.
 
 ## Arquitetura (BFF)
 ```
@@ -52,7 +52,7 @@ Também nunca bloqueia o cadastro.
 Pré-requisitos: banco e API no ar, celular na mesma rede (ver README). Os dados de exemplo já estão carregados.
 
 1. **Login** — entrar com `demo@print3d.com` / `admin123`. Mostrar antes um erro: senha errada → "E-mail ou senha inválidos." *(valida autenticação e mensagens claras)*.
-2. **Dashboard** — apresentar os cards, o gráfico por status e os **2 pedidos atrasados** em destaque. Puxar para atualizar.
+2. **Painel** — apresentar o número de pedidos em aberto, o aviso de atrasados, a fila de produção (a barra laranja é o que está sendo impresso agora) e os **pedidos atrasados**. Puxar para atualizar.
 3. **Clientes** — abrir a lista, buscar por "Studio". Abrir o **menu lateral** (três barras, canto superior esquerdo) → **Lista de clientes** → botão **Novo**, digitar o CEP `01001-000` e mostrar o endereço preenchendo sozinho. Salvar.
 3b. **CNPJ** — em outro cliente novo, digitar o CNPJ `06.990.590/0001-23`: nome, telefone e endereço completos aparecem sozinhos. Digitar `00.000.000/0001-92` (dígito errado) → mensagem de CNPJ inválido.
 4. **Erro tratado** — tentar um CEP inexistente (`99999-999`): mensagem amigável e cadastro continua possível. Tentar salvar sem nome: campo marcado.
@@ -84,6 +84,6 @@ Pré-requisitos: banco e API no ar, celular na mesma rede (ver README). Os dados
 - Limitações assumidas (escopo acadêmico): sem limite de tentativas de login, sem renovação de token (validade de 24 h), HTTP em rede local na demo (em produção, usar HTTPS).
 
 ## Tecnologias
-**App:** Expo, TypeScript, Expo Router, React Native Paper, TanStack Query, React Hook Form + Zod, axios, expo-secure-store, react-native-gifted-charts.
+**App:** Expo, TypeScript, Expo Router, React Native Paper, TanStack Query, React Hook Form + Zod, axios, expo-secure-store.
 **API:** Java 21, Spring Boot 3.5, Spring Security + JWT, JPA, Flyway, MapStruct, PostgreSQL 16.
 **Testes:** 44 automatizados (unitários das regras de status e dos clientes ViaCEP e BrasilAPI com HTTP simulado; integração com PostgreSQL real via Testcontainers).

@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Appbar } from 'react-native-paper';
-import { colors } from '../theme';
+import { fonts, colors } from '../theme';
 import { useMenu } from './SideMenu';
 
 type Props = {
@@ -42,6 +42,6 @@ export function Screen({ title, menu, back, children }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   header: { backgroundColor: colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  title: { color: colors.text, fontWeight: '600' },
+  title: { color: colors.text, fontFamily: fonts.semibold },
   body: { flex: 1 },
 });
