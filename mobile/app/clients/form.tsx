@@ -3,11 +3,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm, type Control, type FieldPath } from 'react-hook-form';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Button, HelperText, Text, TextInput } from 'react-native-paper';
 import { z } from 'zod';
 import { createClient, getClient, lookupCep, updateClient, type Client, type ClientInput } from '../../src/api/clients';
 import { toApiError } from '../../src/api/http';
+import { FormScroll } from '../../src/components/FormScroll';
 import { LoadingState } from '../../src/components/ScreenState';
 import { colors, spacing } from '../../src/theme';
 import { maskCep, maskCpfCnpj, maskPhone, onlyDigits } from '../../src/utils/masks';
@@ -183,13 +184,7 @@ export default function ClientForm() {
   return (
     <>
       <Stack.Screen options={{ title: editingId !== undefined ? 'Editar cliente' : 'Novo cliente' }} />
-      <ScrollView
-        style={styles.flex}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        contentInsetAdjustmentBehavior="automatic"
-        automaticallyAdjustKeyboardInsets
-      >
+      <FormScroll>
         <Field control={control} name="nome" label="Nome *" error={msg('nome')} autoCapitalize="words" />
         <Field control={control} name="telefone" label="Telefone" error={msg('telefone')} mask={maskPhone} keyboardType="phone-pad" />
         <Field control={control} name="email" label="E-mail" error={msg('email')} autoCapitalize="none" keyboardType="email-address" />
@@ -218,14 +213,12 @@ export default function ClientForm() {
         <Button mode="contained" onPress={() => void submit()} loading={busy} disabled={busy}>
           {editingId !== undefined ? 'Salvar alterações' : 'Cadastrar'}
         </Button>
-      </ScrollView>
+      </FormScroll>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.md, paddingBottom: spacing.xl },
   section: { color: colors.textMuted, marginTop: spacing.md, marginBottom: spacing.sm },
   cepMessage: { marginTop: -spacing.md },
 });

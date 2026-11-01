@@ -1,14 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Controller, useForm, type FieldPath } from 'react-hook-form';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Button, Chip, HelperText, TextInput } from 'react-native-paper';
 import { z } from 'zod';
 import { getClient } from '../../src/api/clients';
 import { toApiError } from '../../src/api/http';
 import { canEdit, createOrder, getOrder, updateOrder, type OrderInput } from '../../src/api/orders';
+import { FormScroll } from '../../src/components/FormScroll';
 import { ClientPicker } from '../../src/components/ClientPicker';
 import { LoadingState } from '../../src/components/ScreenState';
 import { colors, spacing } from '../../src/theme';
@@ -77,6 +78,14 @@ export default function OrderForm() {
       .catch(() => undefined);
   }, [presetClientId, editingId, setValue]);
 
+  const onSelectClient = useCallback(
+    (c: { id: number; nome: string }) => {
+      setValue('clienteId', c.id, { shouldValidate: true });
+      setClientName(c.nome);
+    },
+    [setValue],
+  );
+
   const save = useMutation({
     mutationFn: (input: OrderInput) =>
       editingId !== undefined ? updateOrder(editingId, input) : createOrder(input),
@@ -128,20 +137,11 @@ export default function OrderForm() {
   return (
     <>
       <Stack.Screen options={{ title: editingId !== undefined ? 'Editar pedido' : 'Novo pedido' }} />
-      <ScrollView
-        style={styles.flex}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        contentInsetAdjustmentBehavior="automatic"
-        automaticallyAdjustKeyboardInsets
-      >
+      <FormScroll>
         <ClientPicker
           selectedName={clientName}
           error={msg('clienteId')}
-          onSelect={(c) => {
-            setValue('clienteId', c.id, { shouldValidate: true });
-            setClientName(c.nome);
-          }}
+          onSelect={onSelectClient}
         />
 
         <Controller control={control} name="descricao" render={({ field: { value, onChange, onBlur } }) => (
@@ -194,14 +194,12 @@ export default function OrderForm() {
         <Button mode="contained" onPress={() => void submit()} loading={busy} disabled={busy}>
           {editingId !== undefined ? 'Salvar alterações' : 'Criar pedido'}
         </Button>
-      </ScrollView>
+      </FormScroll>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.md, paddingBottom: spacing.xl },
   chips: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.sm },
   chip: { marginRight: spacing.sm, marginBottom: spacing.xs },
   blocked: { margin: spacing.lg },

@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, HelperText, Text, TextInput } from 'react-native-paper';
 import { z } from 'zod';
 import { toApiError } from '../src/api/http';
@@ -39,11 +39,13 @@ export default function Login() {
   });
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <View style={styles.flex}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets
+      >
         <Text variant="headlineMedium" style={styles.title}>
           Print3D Mobile
         </Text>
@@ -114,13 +116,13 @@ export default function Login() {
           </Button>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
-  container: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg },
+  container: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg, paddingBottom: 120 },
   title: { color: colors.primary, fontWeight: '700', textAlign: 'center' },
   muted: { color: colors.textMuted, textAlign: 'center', marginTop: spacing.sm },
   form: { marginTop: spacing.xl },
