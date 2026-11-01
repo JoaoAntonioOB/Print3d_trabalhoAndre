@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 @Schema(description = "Credenciais de acesso")
 public record LoginRequest(
 
-        @Schema(example = "admin@print3d.com")
+        @Schema(example = "demo@print3d.com")
         @NotBlank(message = "O e-mail é obrigatório")
         @Email(message = "E-mail inválido")
         String email,

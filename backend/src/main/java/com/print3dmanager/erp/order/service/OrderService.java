@@ -5,307 +5,109 @@ import com.print3dmanager.erp.client.repository.ClientRepository;
 import com.print3dmanager.erp.common.dto.PageResponse;
 import com.print3dmanager.erp.common.exception.BusinessException;
 import com.print3dmanager.erp.common.exception.ResourceNotFoundException;
-import com.print3dmanager.erp.filament.model.Filament;
-import com.print3dmanager.erp.filament.repository.FilamentRepository;
-import com.print3dmanager.erp.financial.service.OrderBillingService;
 import com.print3dmanager.erp.order.dto.OrderCreateRequest;
-import com.print3dmanager.erp.order.dto.OrderItemPricingRequest;
-import com.print3dmanager.erp.order.dto.OrderItemRequest;
 import com.print3dmanager.erp.order.dto.OrderResponse;
-import com.print3dmanager.erp.order.dto.OrderSummaryResponse;
 import com.print3dmanager.erp.order.dto.OrderUpdateRequest;
 import com.print3dmanager.erp.order.mapper.OrderMapper;
 import com.print3dmanager.erp.order.model.Order;
-import com.print3dmanager.erp.order.model.OrderItem;
 import com.print3dmanager.erp.order.model.OrderStatus;
 import com.print3dmanager.erp.order.repository.OrderRepository;
 import com.print3dmanager.erp.order.repository.OrderSpecifications;
-import com.print3dmanager.erp.pricing.PricingInput;
-import com.print3dmanager.erp.pricing.PricingResult;
-import com.print3dmanager.erp.pricing.PricingStrategy;
-import com.print3dmanager.erp.printer.model.PrinterConfiguration;
-import com.print3dmanager.erp.printer.service.PrinterConfigurationService;
-import com.print3dmanager.erp.user.repository.UserRepository;
+import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.Year;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 /**
- * Regras de negócio de pedidos: número sequencial por ano, itens geridos
- * junto com o pedido (substituição por lista), total calculado dos itens
- * e ciclo de vida controlado por máquina de estados.
+ * Regras de pedidos: ciclo de vida PENDENTE → EM_PRODUCAO → CONCLUIDO → ENTREGUE
+ * (CANCELADO a partir de PENDENTE ou EM_PRODUCAO) e edição só enquanto em aberto.
  */
 @Service
 @RequiredArgsConstructor
 public class OrderService {
 
-    /** Transições de status permitidas a partir de cada estado. */
-    private static final Map<OrderStatus, Set<OrderStatus>> TRANSICOES = Map.of(
+    static final Map<OrderStatus, Set<OrderStatus>> TRANSICOES = Map.of(
             OrderStatus.PENDENTE, Set.of(OrderStatus.EM_PRODUCAO, OrderStatus.CANCELADO),
             OrderStatus.EM_PRODUCAO, Set.of(OrderStatus.CONCLUIDO, OrderStatus.CANCELADO),
             OrderStatus.CONCLUIDO, Set.of(OrderStatus.ENTREGUE),
             OrderStatus.ENTREGUE, Set.of(),
             OrderStatus.CANCELADO, Set.of());
 
-    /** Mesmo fallback usado por QuoteService quando não há configuração global. */
-    private static final BigDecimal MARKUP_FALLBACK = new BigDecimal("100.00");
-
     private final OrderRepository orderRepository;
     private final ClientRepository clientRepository;
-    private final FilamentRepository filamentRepository;
-    private final UserRepository userRepository;
-    private final OrderBillingService orderBillingService;
-    private final OrderItemFileService orderItemFileService;
-    private final PricingStrategy pricingStrategy;
-    private final PrinterConfigurationService printerConfigurationService;
     private final OrderMapper orderMapper;
 
     @Transactional(readOnly = true)
-    public PageResponse<OrderSummaryResponse> listar(String busca, OrderStatus status,
-                                                     Long clienteId, Pageable pageable) {
+    public PageResponse<OrderResponse> listar(String busca, OrderStatus status, Long clienteId,
+                                              Pageable pageable) {
         return PageResponse.de(
-                orderRepository.findAll(
-                                OrderSpecifications.comFiltros(busca, status, clienteId), pageable)
-                        .map(orderMapper::toSummaryResponse));
+                orderRepository.findAll(OrderSpecifications.comFiltros(busca, status, clienteId), pageable)
+                        .map(orderMapper::toResponse));
     }
 
     @Transactional(readOnly = true)
     public OrderResponse buscarPorId(Long id) {
-        return orderMapper.toResponse(obterPedidoDetalhado(id));
+        return orderMapper.toResponse(obterPedido(id));
     }
 
     @Transactional
-    public OrderResponse criar(OrderCreateRequest request, Long usuarioId) {
+    public OrderResponse criar(OrderCreateRequest request) {
         Order pedido = new Order();
-        pedido.setCliente(obterClienteAtivo(request.clienteId()));
-        pedido.setUsuario(userRepository.getReferenceById(usuarioId));
-        pedido.setDataEntregaPrevista(request.dataEntregaPrevista());
-        pedido.setDesconto(request.desconto() == null ? BigDecimal.ZERO : request.desconto());
-        pedido.setObservacoes(request.observacoes());
-        pedido.setNumero(gerarNumero());
-
-        request.itens().forEach(itemRequest -> {
-            OrderItem item = orderMapper.toItemEntity(itemRequest);
-            item.setFilamento(obterFilamentoAtivo(itemRequest.filamentoId()));
-            if (itemRequest.precoUnitario() == null) {
-                item.setPrecoUnitario(precoSugerido(item.getFilamento(),
-                        item.getPesoEstimadoG(), item.getTempoImpressaoMinutos()));
-            }
-            pedido.adicionarItem(item);
-        });
-        recalcularTotal(pedido);
-
+        pedido.setCliente(obterCliente(request.clienteId()));
+        pedido.setDescricao(request.descricao().trim());
+        pedido.setMaterial(request.material().trim().toUpperCase());
+        pedido.setPesoGramas(request.pesoGramas());
+        pedido.setValor(request.valor());
+        pedido.setPrazo(request.prazo());
         return orderMapper.toResponse(orderRepository.save(pedido));
     }
 
     @Transactional
     public OrderResponse atualizar(Long id, OrderUpdateRequest request) {
-        Order pedido = obterPedidoDetalhado(id);
-        if (pedido.getStatus() != OrderStatus.PENDENTE) {
+        Order pedido = obterPedido(id);
+        if (pedido.getStatus() != OrderStatus.PENDENTE && pedido.getStatus() != OrderStatus.EM_PRODUCAO) {
             throw new BusinessException(
-                    "Somente pedidos PENDENTES podem ser editados. Status atual: %s."
-                            .formatted(pedido.getStatus()));
+                    "Pedido %s não pode ser editado.".formatted(pedido.getStatus()));
         }
-
-        pedido.setCliente(obterClienteAtivo(request.clienteId()));
-        pedido.setDataEntregaPrevista(request.dataEntregaPrevista());
-        pedido.setDesconto(request.desconto());
-        pedido.setObservacoes(request.observacoes());
-        mesclarItens(pedido, request.itens());
-        recalcularTotal(pedido);
-
+        pedido.setCliente(obterCliente(request.clienteId()));
+        pedido.setDescricao(request.descricao().trim());
+        pedido.setMaterial(request.material().trim().toUpperCase());
+        pedido.setPesoGramas(request.pesoGramas());
+        pedido.setValor(request.valor());
+        pedido.setPrazo(request.prazo());
         return orderMapper.toResponse(pedido);
     }
 
     @Transactional
     public OrderResponse alterarStatus(Long id, OrderStatus novoStatus) {
-        Order pedido = obterPedidoDetalhado(id);
+        Order pedido = obterPedido(id);
         if (!TRANSICOES.get(pedido.getStatus()).contains(novoStatus)) {
-            throw new BusinessException(
-                    "Transição de status inválida: %s → %s."
-                            .formatted(pedido.getStatus(), novoStatus));
+            throw new BusinessException("Transição de status inválida: %s → %s."
+                    .formatted(pedido.getStatus(), novoStatus));
         }
         pedido.setStatus(novoStatus);
-        if (novoStatus == OrderStatus.ENTREGUE) {
-            if (pedido.getDataEntregaRealizada() == null) {
-                pedido.setDataEntregaRealizada(LocalDate.now());
-            }
-            orderBillingService.gerarReceitaSeNecessario(pedido);
-        }
         return orderMapper.toResponse(pedido);
     }
 
-    /** Exclusão física, permitida apenas para pedidos ainda PENDENTES. */
     @Transactional
     public void excluir(Long id) {
         Order pedido = obterPedido(id);
-        if (pedido.getStatus() != OrderStatus.PENDENTE) {
+        if (pedido.getStatus() != OrderStatus.PENDENTE && pedido.getStatus() != OrderStatus.CANCELADO) {
             throw new BusinessException(
-                    "Somente pedidos PENDENTES podem ser excluídos — cancele o pedido "
-                            + "para preservar o histórico.");
+                    "Somente pedidos PENDENTES ou CANCELADOS podem ser excluídos.");
         }
-        pedido.getItens().forEach(
-                item -> orderItemFileService.removerArquivoFisico(item.getArquivoModelo()));
         orderRepository.delete(pedido);
     }
 
-    /**
-     * Substitui os itens do pedido pela lista recebida: com id = atualiza,
-     * sem id = cria, ausente da lista = remove (orphanRemoval).
-     */
-    private void mesclarItens(Order pedido, List<OrderItemRequest> requests) {
-        Map<Long, OrderItem> atuais = new HashMap<>();
-        pedido.getItens().forEach(item -> atuais.put(item.getId(), item));
-
-        Set<Long> idsRecebidos = requests.stream()
-                .map(OrderItemRequest::id)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        pedido.getItens().removeIf(item -> {
-            boolean remover = !idsRecebidos.contains(item.getId());
-            if (remover) {
-                orderItemFileService.removerArquivoFisico(item.getArquivoModelo());
-            }
-            return remover;
-        });
-
-        requests.forEach(itemRequest -> {
-            if (itemRequest.id() == null) {
-                OrderItem novo = orderMapper.toItemEntity(itemRequest);
-                novo.setFilamento(obterFilamentoAtivo(itemRequest.filamentoId()));
-                if (itemRequest.precoUnitario() == null) {
-                    novo.setPrecoUnitario(precoSugerido(novo.getFilamento(),
-                            novo.getPesoEstimadoG(), novo.getTempoImpressaoMinutos()));
-                }
-                pedido.adicionarItem(novo);
-                return;
-            }
-            OrderItem existente = atuais.get(itemRequest.id());
-            if (existente == null) {
-                throw new BusinessException(
-                        "O item %d não pertence a este pedido.".formatted(itemRequest.id()));
-            }
-            orderMapper.atualizarItem(existente, itemRequest);
-            existente.setFilamento(obterFilamentoAtivo(itemRequest.filamentoId()));
-            if (itemRequest.precoUnitario() == null) {
-                existente.setPrecoUnitario(precoSugerido(existente.getFilamento(),
-                        existente.getPesoEstimadoG(), existente.getTempoImpressaoMinutos()));
-            }
-        });
-    }
-
-    /** valorTotal = Σ (quantidade × preço unitário) − desconto (nunca negativo). */
-    private void recalcularTotal(Order pedido) {
-        BigDecimal subtotal = pedido.getItens().stream()
-                .map(OrderItem::getSubtotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal total = subtotal.subtract(pedido.getDesconto());
-        if (total.signum() < 0) {
-            throw new BusinessException(
-                    "O desconto (%s) não pode ser maior que o subtotal dos itens (%s)."
-                            .formatted(pedido.getDesconto().toPlainString(),
-                                    subtotal.toPlainString()));
-        }
-        pedido.setValorTotal(total);
-    }
-
-    /**
-     * Preço sugerido para um item de pedido quando o preço unitário não é
-     * informado — mesma estratégia usada nos orçamentos (custo filamento +
-     * energia + hora máquina + desgaste + markup), sempre a partir da
-     * configuração global (itens de pedido não têm impressora associada,
-     * então o componente de energia entra como zero, igual a um orçamento
-     * sem impressora escolhida).
-     */
-    private BigDecimal precoSugerido(Filament filamento, BigDecimal pesoEstimadoG,
-                                     Integer tempoImpressaoMinutos) {
-        return calcularPreco(filamento, pesoEstimadoG, tempoImpressaoMinutos, null)
-                .precoSugerido();
-    }
-
-    /**
-     * Simula o preço de um item de pedido sem persistir nada, expondo a
-     * decomposição de custos completa (igual ao orçamento).
-     */
-    @Transactional(readOnly = true)
-    public PricingResult precificarPreview(OrderItemPricingRequest request) {
-        Filament filamento = obterFilamentoAtivo(request.filamentoId());
-        return calcularPreco(filamento, request.pesoEstimadoG(),
-                request.tempoImpressaoMinutos(), request.markup());
-    }
-
-    /** Monta o input e delega à estratégia; markup informado > global > 100%. */
-    private PricingResult calcularPreco(Filament filamento, BigDecimal pesoEstimadoG,
-                                        Integer tempoImpressaoMinutos, BigDecimal markupInformado) {
-        Optional<PrinterConfiguration> config = printerConfigurationService.buscarGlobalOpcional();
-        BigDecimal markup = markupInformado != null
-                ? markupInformado
-                : config.map(PrinterConfiguration::getMarkupPadrao).orElse(MARKUP_FALLBACK);
-        PricingInput input = new PricingInput(
-                filamento, null, config, pesoEstimadoG, tempoImpressaoMinutos, markup);
-        return pricingStrategy.calcular(input);
-    }
-
-    /**
-     * Gera o próximo número do ano (PED-2026-0001). O advisory lock do
-     * Postgres serializa geradores concorrentes até o fim da transação;
-     * a unique constraint em pedidos.numero é o backstop.
-     */
-    private String gerarNumero() {
-        int ano = Year.now().getValue();
-        orderRepository.travarGeracaoNumero(ano);
-        String prefixo = "PED-%d-".formatted(ano);
-        int proximo = orderRepository.findTopByNumeroStartingWithOrderByIdDesc(prefixo)
-                .map(ultimo -> Integer.parseInt(
-                        ultimo.getNumero().substring(prefixo.length())) + 1)
-                .orElse(1);
-        return "%s%04d".formatted(prefixo, proximo);
-    }
-
-    private Client obterClienteAtivo(Long id) {
-        Client cliente = clientRepository.findById(id)
+    private Client obterCliente(Long id) {
+        return clientRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente", id));
-        if (!cliente.isAtivo()) {
-            throw new BusinessException(
-                    "O cliente %s está desativado e não pode receber novos pedidos."
-                            .formatted(cliente.getNome()));
-        }
-        return cliente;
-    }
-
-    private Filament obterFilamentoAtivo(Long id) {
-        if (id == null) {
-            return null;
-        }
-        Filament filamento = filamentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Filamento", id));
-        if (!filamento.isAtivo()) {
-            throw new BusinessException(
-                    "O filamento %s está desativado e não pode ser usado em novos itens."
-                            .formatted(filamento.getNome()));
-        }
-        return filamento;
     }
 
     private Order obterPedido(Long id) {
         return orderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Pedido", id));
-    }
-
-    private Order obterPedidoDetalhado(Long id) {
-        return orderRepository.findDetalhadoById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pedido", id));
     }
 }

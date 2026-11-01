@@ -1,6 +1,12 @@
 package com.print3dmanager.erp.order.repository;
 
 import com.print3dmanager.erp.order.model.Order;
+import com.print3dmanager.erp.order.model.OrderStatus;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -10,28 +16,33 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Optional;
-
 public interface OrderRepository
         extends JpaRepository<Order, Long>, JpaSpecificationExecutor<Order> {
 
-    /** Listagem com cliente já carregado (evita N+1 no resumo). */
     @Override
     @EntityGraph(attributePaths = "cliente")
     Page<Order> findAll(Specification<Order> spec, Pageable pageable);
 
-    /** Pedido completo para respostas detalhadas. */
-    @EntityGraph(attributePaths = {"cliente", "usuario", "itens", "itens.filamento"})
-    Optional<Order> findDetalhadoById(Long id);
+    boolean existsByClienteId(Long clienteId);
 
-    /** Último número emitido no ano (o mais recente é o de maior id). */
-    Optional<Order> findTopByNumeroStartingWithOrderByIdDesc(String prefixo);
+    // ---- consultas do dashboard ----
 
-    /**
-     * Serializa a geração de número do ano via advisory lock transacional
-     * do Postgres — liberado automaticamente no commit/rollback.
-     */
-    @Query(value = "SELECT pg_advisory_xact_lock(hashtext('pedidos_numero_' || :ano))",
-            nativeQuery = true)
-    void travarGeracaoNumero(@Param("ano") int ano);
+    @Query("SELECT o.status, COUNT(o) FROM Order o GROUP BY o.status")
+    List<Object[]> contarPorStatus();
+
+    @Query("""
+            SELECT COALESCE(SUM(o.valor), 0) FROM Order o
+            WHERE o.status <> :ignorado AND o.criadoEm >= :inicio AND o.criadoEm < :fim
+            """)
+    BigDecimal somarValorNoPeriodo(@Param("ignorado") OrderStatus ignorado,
+                                   @Param("inicio") Instant inicio, @Param("fim") Instant fim);
+
+    long countByStatusInAndPrazoBefore(Collection<OrderStatus> status, LocalDate data);
+
+    @EntityGraph(attributePaths = "cliente")
+    List<Order> findByStatusInAndPrazoBeforeOrderByPrazoAsc(
+            Collection<OrderStatus> status, LocalDate data, Pageable pageable);
+
+    @EntityGraph(attributePaths = "cliente")
+    List<Order> findAllByOrderByCriadoEmDesc(Pageable pageable);
 }

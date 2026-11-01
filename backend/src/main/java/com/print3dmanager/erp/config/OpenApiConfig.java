@@ -20,19 +20,17 @@ public class OpenApiConfig {
     private static final String BEARER_AUTH = "bearerAuth";
 
     @Bean
-    public OpenAPI print3dManagerOpenApi() {
+    public OpenAPI print3dMobileOpenApi() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Print3D Manager ERP API")
+                        .title("Print3D Mobile API")
                         .description("""
-                                API do sistema ERP para gerenciamento de empresas de impressão 3D: \
-                                clientes, pedidos, orçamentos, filamentos, estoque, impressoras, \
-                                financeiro e relatórios.
+                                API (BFF) do app Print3D Mobile: clientes, pedidos e dashboard.
 
                                 Autentique-se em **POST /auth/login** e informe o access token \
                                 no botão Authorize.""")
                         .version("1.0.0")
-                        .contact(new Contact().name("Print3D Manager ERP")))
+                        .contact(new Contact().name("Print3D Mobile")))
                 .components(new Components()
                         .addSecuritySchemes(BEARER_AUTH, new SecurityScheme()
                                 .name(BEARER_AUTH)

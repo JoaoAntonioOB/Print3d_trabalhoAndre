@@ -1,29 +1,19 @@
 spring:
   application:
-    name: print3d-manager-erp
+    name: print3d-mobile-api
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
-
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: validate
     properties:
       hibernate:
-        format_sql: true
         jdbc:
           time_zone: UTC
-
   flyway:
     enabled: true
     locations: classpath:db/migration
-    baseline-on-migrate: false
-
-  servlet:
-    multipart:
-      max-file-size: 100MB
-      max-request-size: 120MB
-
   jackson:
     default-property-inclusion: non_null
 
@@ -31,54 +21,24 @@ server:
   port: 8080
   servlet:
     context-path: /api
-  # Atrás do NGINX todos os clientes chegariam com o IP do proxy — o
-  # RemoteIpValve troca o remote address pelo X-Forwarded-For quando o
-  # peer direto é um proxy interno confiável, mantendo o rate limit e os
-  # logs por IP real do cliente. IMPORTANTE: internal-proxies é restrito ao
-  # IP FIXO do container "frontend"/NGINX na print3d-network (ver
-  # docker-compose.yml, TOMCAT_INTERNAL_PROXIES) — não a sub-rede inteira.
-  # O default amplo do Tomcat (10/8, 172.16/12, 192.168/16 inteiros), ou
-  # mesmo um regex cobrindo o /24 da rede Docker, faz o GATEWAY da rede
-  # (usado pelo Docker para NAT de conexões publicadas no host) também
-  # ser tratado como proxy confiável — validado ao vivo: com isso, dava
-  # pra forjar X-Forwarded-For e furar o rate limiting mesmo pela porta 80
-  # (NGINX legítimo). Restrito ao IP exato do NGINX, qualquer outro peer
-  # (inclusive o gateway) já é tratado como cliente final.
-  tomcat:
-    remoteip:
-      remote-ip-header: x-forwarded-for
-      protocol-header: x-forwarded-proto
-      internal-proxies: ${TOMCAT_INTERNAL_PROXIES:172\.28\.5\.10}
   error:
     include-message: always
     include-stacktrace: never
 
 springdoc:
-  api-docs:
-    path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
-    operations-sorter: method
-    tags-sorter: alpha
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health
 
 application:
   security:
     jwt:
       secret: ${JWT_SECRET:cHJpbnQzZC1tYW5hZ2VyLWVycC1kZXYtc2VjcmV0LWtleS0yNTYtYml0cy1taW5pbXVtLXNpemU=}
-      access-token-expiration: ${JWT_ACCESS_EXPIRATION:900000}
-      refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+      access-token-expiration: ${JWT_ACCESS_EXPIRATION:86400000}
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
-  storage:
-    upload-dir: ${UPLOAD_DIR:./uploads}
-  rate-limit:
-    enabled: ${RATE_LIMIT_ENABLED:true}
-    limite-auth: ${RATE_LIMIT_AUTH:10}
-    limite-public: ${RATE_LIMIT_PUBLIC:30}
-    janela-segundos: ${RATE_LIMIT_JANELA_SEGUNDOS:60}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:*}

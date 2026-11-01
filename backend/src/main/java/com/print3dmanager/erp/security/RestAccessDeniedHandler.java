@@ -28,11 +28,7 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
                        HttpServletResponse response,
                        AccessDeniedException accessDeniedException) throws IOException {
 
-        ApiErrorResponse body = ApiErrorResponse.of(
-                HttpStatus.FORBIDDEN.value(),
-                HttpStatus.FORBIDDEN.getReasonPhrase(),
-                "Acesso negado: você não tem permissão para acessar este recurso.",
-                request.getRequestURI());
+        ApiErrorResponse body = ApiErrorResponse.of("FORBIDDEN", "Acesso negado.");
 
         response.setStatus(HttpStatus.FORBIDDEN.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);

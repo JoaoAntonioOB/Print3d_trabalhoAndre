@@ -9,7 +9,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -29,18 +28,16 @@ import java.util.List;
  *
  * API stateless (sem sessão/CSRF): a autenticação é feita pelo
  * JwtAuthenticationFilter. Rotas públicas: autenticação,
- * aprovação pública de orçamentos, Swagger e health/info do Actuator.
+ * Swagger e health do Actuator.
  * Os caminhos abaixo não incluem o context path /api.
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private static final String[] ROTAS_PUBLICAS = {
-            "/auth/**",          // login, refresh token (Etapa 6)
-            "/public/**"         // aprovação de orçamento via shareToken (Etapa 13)
+            "/auth/login"
     };
 
     private static final String[] ROTAS_DOCUMENTACAO = {
@@ -50,8 +47,7 @@ public class SecurityConfig {
     };
 
     private static final String[] ROTAS_MONITORAMENTO = {
-            "/actuator/health",
-            "/actuator/info"
+            "/actuator/health"
     };
 
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
@@ -96,11 +92,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(corsProperties.allowedOrigins());
+        configuration.setAllowedOriginPatterns(corsProperties.allowedOrigins());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Content-Disposition"));
-        configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

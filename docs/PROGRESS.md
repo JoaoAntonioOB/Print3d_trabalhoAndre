@@ -1,0 +1,16 @@
+# Progresso
+
+## Feito
+- **Marco 0 (parcial):** cópia do TCC enxugada. Removidos frontend web, módulos de impressoras, filamentos, estoque, orçamentos, financeiro, relatórios, precificação, upload STL/3MF, refresh token, rate limit e CRUD de usuários.
+- API com login JWT, clientes (CRUD, exclusão bloqueada com pedidos), pedidos simplificados (ciclo de status) e `GET /api/dashboard`.
+- Migrations: `V1` schema (usuarios, clientes, pedidos), `V2` usuário demo. 26 testes passando (unitários + Testcontainers).
+
+## Próximo
+- Marco 0: criar o app Expo em `mobile/` (navegação, tema, cliente HTTP) e renomear `backend/` → `api/` se desejado (a pasta estava travada pela IDE).
+- Marco 1: autenticação no app. Marco 2: `/api/cep` + telas de clientes. Marco 3: pedidos. Marco 4: dashboard. Marco 5: fechamento.
+
+## Decisões
+- Mantidos nomes em português do domínio (tabelas/campos), como no código herdado.
+- Sem papéis: todo usuário autenticado acessa tudo.
+- Token JWT único de 24h (sem refresh) para simplificar a demo.
+- Faturamento do mês = soma dos pedidos criados no mês, exceto cancelados.

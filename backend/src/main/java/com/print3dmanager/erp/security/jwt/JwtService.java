@@ -34,7 +34,6 @@ public class JwtService {
         return Jwts.builder()
                 .subject(usuario.getEmail())
                 .claim("uid", usuario.getId())
-                .claim("role", usuario.getRole().name())
                 .issuedAt(Date.from(agora))
                 .expiration(Date.from(agora.plusMillis(properties.accessTokenExpiration())))
                 .signWith(key)
@@ -61,10 +60,5 @@ public class JwtService {
     /** Validade do access token em segundos (para o corpo da resposta de login). */
     public long accessTokenValidadeSegundos() {
         return properties.accessTokenExpiration() / 1000;
-    }
-
-    /** Validade do refresh token em milissegundos. */
-    public long refreshTokenValidadeMillis() {
-        return properties.refreshTokenExpiration();
     }
 }

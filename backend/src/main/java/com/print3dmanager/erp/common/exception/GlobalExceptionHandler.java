@@ -1,181 +1,108 @@
 package com.print3dmanager.erp.common.exception;
 
 import com.print3dmanager.erp.common.dto.ApiErrorResponse;
-import com.print3dmanager.erp.common.dto.ApiErrorResponse.FieldValidationError;
+import com.print3dmanager.erp.common.dto.ApiErrorResponse.FieldError;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Arrays;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.DisabledException;
-import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.springframework.web.multipart.MaxUploadSizeExceededException;
-import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import java.util.Arrays;
-import java.util.List;
-
-/**
- * Converte exceções em respostas JSON no formato padrão da API
- * (mesmo formato dos handlers 401/403 do Spring Security).
- */
+/** Converte exceções em respostas {@code { code, message, fieldErrors[] }}. */
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiErrorResponse> handleValidacao(MethodArgumentNotValidException ex,
-                                                            HttpServletRequest request) {
-        List<FieldValidationError> erros = ex.getBindingResult().getFieldErrors().stream()
-                .map(this::paraErroDeCampo)
+    public ResponseEntity<ApiErrorResponse> handleValidacao(MethodArgumentNotValidException ex) {
+        List<FieldError> erros = ex.getBindingResult().getFieldErrors().stream()
+                .map(e -> new FieldError(e.getField(), e.getDefaultMessage()))
                 .toList();
-
-        return construir(HttpStatus.BAD_REQUEST, "Erro de validação nos campos enviados.",
-                request, erros);
+        return ResponseEntity.badRequest().body(
+                ApiErrorResponse.validation("Verifique os campos informados.", erros));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiErrorResponse> handleCorpoIlegivel(HttpMessageNotReadableException ex,
-                                                                HttpServletRequest request) {
-        return construir(HttpStatus.BAD_REQUEST,
-                "Corpo da requisição ausente ou JSON malformado.", request, null);
+    public ResponseEntity<ApiErrorResponse> handleCorpoIlegivel() {
+        return erro(HttpStatus.BAD_REQUEST, "BAD_REQUEST",
+                "Corpo da requisição ausente ou JSON malformado.");
     }
 
-    @ExceptionHandler({BadCredentialsException.class})
-    public ResponseEntity<ApiErrorResponse> handleCredenciaisInvalidas(BadCredentialsException ex,
-                                                                       HttpServletRequest request) {
-        // Mensagem genérica em login para não revelar se o e-mail existe;
-        // no refresh a mensagem específica da exceção é mais útil.
-        String mensagem = request.getRequestURI().endsWith("/auth/login")
-                ? "E-mail ou senha inválidos."
-                : ex.getMessage();
-        return construir(HttpStatus.UNAUTHORIZED, mensagem, request, null);
-    }
-
-    @ExceptionHandler({DisabledException.class, LockedException.class})
-    public ResponseEntity<ApiErrorResponse> handleUsuarioInativo(AuthenticationException ex,
-                                                                 HttpServletRequest request) {
-        return construir(HttpStatus.UNAUTHORIZED, "Usuário inativo ou bloqueado.", request, null);
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiErrorResponse> handleCredenciaisInvalidas() {
+        return erro(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "E-mail ou senha inválidos.");
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ApiErrorResponse> handleAutenticacao(AuthenticationException ex,
-                                                               HttpServletRequest request) {
-        return construir(HttpStatus.UNAUTHORIZED, "Falha na autenticação.", request, null);
-    }
-
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiErrorResponse> handleAcessoNegado(AccessDeniedException ex,
-                                                               HttpServletRequest request) {
-        return construir(HttpStatus.FORBIDDEN,
-                "Acesso negado: você não tem permissão para acessar este recurso.", request, null);
+    public ResponseEntity<ApiErrorResponse> handleAutenticacao() {
+        return erro(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Falha na autenticação.");
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiErrorResponse> handleNaoEncontrado(ResourceNotFoundException ex,
-                                                                HttpServletRequest request) {
-        return construir(HttpStatus.NOT_FOUND, ex.getMessage(), request, null);
+    public ResponseEntity<ApiErrorResponse> handleNaoEncontrado(ResourceNotFoundException ex) {
+        return erro(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage());
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<ApiErrorResponse> handleRotaInexistente(NoResourceFoundException ex,
-                                                                  HttpServletRequest request) {
-        return construir(HttpStatus.NOT_FOUND, "Recurso não encontrado.", request, null);
+    public ResponseEntity<ApiErrorResponse> handleRotaInexistente() {
+        return erro(HttpStatus.NOT_FOUND, "NOT_FOUND", "Recurso não encontrado.");
     }
 
     @ExceptionHandler(ResourceConflictException.class)
-    public ResponseEntity<ApiErrorResponse> handleConflito(ResourceConflictException ex,
-                                                           HttpServletRequest request) {
-        return construir(HttpStatus.CONFLICT, ex.getMessage(), request, null);
+    public ResponseEntity<ApiErrorResponse> handleConflito(ResourceConflictException ex) {
+        return erro(HttpStatus.CONFLICT, "CONFLICT", ex.getMessage());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ApiErrorResponse> handleIntegridadeDeDados(
-            DataIntegrityViolationException ex, HttpServletRequest request) {
-        // Cobre violação de FK/unique não tratada explicitamente no service (ex.:
-        // exclusão física de registro ainda referenciado por outra tabela) — erro
-        // de negócio legítimo do usuário, não deve virar 500.
-        log.warn("Violação de integridade de dados em {} {}: {}", request.getMethod(),
-                request.getRequestURI(), ex.getMessage());
-        return construir(HttpStatus.CONFLICT,
-                "Não é possível excluir este registro: ele está vinculado a outros dados "
-                        + "do sistema.", request, null);
+    public ResponseEntity<ApiErrorResponse> handleIntegridade(DataIntegrityViolationException ex,
+                                                              HttpServletRequest request) {
+        log.warn("Violação de integridade em {} {}", request.getMethod(), request.getRequestURI());
+        return erro(HttpStatus.CONFLICT, "CONFLICT",
+                "Operação não permitida: o registro está vinculado a outros dados.");
     }
 
     @ExceptionHandler(PropertyReferenceException.class)
-    public ResponseEntity<ApiErrorResponse> handleOrdenacaoInvalida(PropertyReferenceException ex,
-                                                                    HttpServletRequest request) {
-        return construir(HttpStatus.BAD_REQUEST,
-                "Parâmetro de ordenação ou filtro inválido: " + ex.getPropertyName(),
-                request, null);
+    public ResponseEntity<ApiErrorResponse> handleOrdenacaoInvalida(PropertyReferenceException ex) {
+        return erro(HttpStatus.BAD_REQUEST, "BAD_REQUEST",
+                "Parâmetro de ordenação inválido: " + ex.getPropertyName());
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiErrorResponse> handleParametroInvalido(
-            MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
-        Class<?> tipoEsperado = ex.getRequiredType();
-        String valores = tipoEsperado != null && tipoEsperado.isEnum()
-                ? " Valores aceitos: " + Arrays.toString(tipoEsperado.getEnumConstants())
+            MethodArgumentTypeMismatchException ex) {
+        Class<?> tipo = ex.getRequiredType();
+        String valores = tipo != null && tipo.isEnum()
+                ? " Valores aceitos: " + Arrays.toString(tipo.getEnumConstants())
                 : "";
-        return construir(HttpStatus.BAD_REQUEST,
-                "Valor inválido para o parâmetro '%s'.%s".formatted(ex.getName(), valores),
-                request, null);
-    }
-
-    @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<ApiErrorResponse> handleUploadGrande(MaxUploadSizeExceededException ex,
-                                                               HttpServletRequest request) {
-        return construir(HttpStatus.PAYLOAD_TOO_LARGE,
-                "O arquivo enviado excede o limite de upload (100 MB por arquivo, "
-                        + "120 MB por requisição).", request, null);
-    }
-
-    @ExceptionHandler(MissingServletRequestPartException.class)
-    public ResponseEntity<ApiErrorResponse> handleParteAusente(
-            MissingServletRequestPartException ex, HttpServletRequest request) {
-        return construir(HttpStatus.BAD_REQUEST,
-                "Parte obrigatória ausente na requisição multipart: '%s'."
-                        .formatted(ex.getRequestPartName()), request, null);
+        return erro(HttpStatus.BAD_REQUEST, "BAD_REQUEST",
+                "Valor inválido para o parâmetro '%s'.%s".formatted(ex.getName(), valores));
     }
 
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiErrorResponse> handleRegraDeNegocio(BusinessException ex,
-                                                                 HttpServletRequest request) {
-        return construir(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+    public ResponseEntity<ApiErrorResponse> handleRegraDeNegocio(BusinessException ex) {
+        return erro(HttpStatus.BAD_REQUEST, "BUSINESS_RULE", ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleErroInterno(Exception ex,
                                                               HttpServletRequest request) {
-        log.error("Erro interno não tratado em {} {}", request.getMethod(),
-                request.getRequestURI(), ex);
-        return construir(HttpStatus.INTERNAL_SERVER_ERROR,
-                "Erro interno inesperado. Tente novamente mais tarde.", request, null);
+        log.error("Erro interno em {} {}", request.getMethod(), request.getRequestURI(), ex);
+        return erro(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR",
+                "Erro interno inesperado. Tente novamente mais tarde.");
     }
 
-    private FieldValidationError paraErroDeCampo(FieldError fieldError) {
-        return new FieldValidationError(fieldError.getField(), fieldError.getDefaultMessage());
-    }
-
-    private ResponseEntity<ApiErrorResponse> construir(HttpStatus status, String mensagem,
-                                                       HttpServletRequest request,
-                                                       List<FieldValidationError> erros) {
-        ApiErrorResponse body = erros == null
-                ? ApiErrorResponse.of(status.value(), status.getReasonPhrase(), mensagem,
-                        request.getRequestURI())
-                : ApiErrorResponse.validacao(status.value(), status.getReasonPhrase(), mensagem,
-                        request.getRequestURI(), erros);
-        return ResponseEntity.status(status).body(body);
+    private ResponseEntity<ApiErrorResponse> erro(HttpStatus status, String code, String message) {
+        return ResponseEntity.status(status).body(ApiErrorResponse.of(code, message));
     }
 }

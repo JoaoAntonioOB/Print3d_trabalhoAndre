@@ -28,11 +28,7 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
                          HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
 
-        ApiErrorResponse body = ApiErrorResponse.of(
-                HttpStatus.UNAUTHORIZED.value(),
-                HttpStatus.UNAUTHORIZED.getReasonPhrase(),
-                "Autenticação necessária para acessar este recurso.",
-                request.getRequestURI());
+        ApiErrorResponse body = ApiErrorResponse.of("UNAUTHORIZED", "Autenticação necessária para acessar este recurso.");
 
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);

@@ -1,37 +1,25 @@
 package com.print3dmanager.erp.dashboard.dto;
 
+import com.print3dmanager.erp.order.dto.OrderResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
-@Schema(description = "Indicadores gerais do painel — contadores por status e destaques do mês")
+@Schema(description = "Tudo que a tela de dashboard precisa, em uma única chamada")
 public record DashboardResumoResponse(
-
-        @Schema(description = "Pedidos por status (todos os status presentes, ausência = 0)")
+        long totalClientes,
+        @Schema(description = "Pedidos PENDENTE + EM_PRODUCAO")
+        long pedidosAbertos,
+        @Schema(description = "Soma dos valores dos pedidos criados no mês (exceto cancelados)")
+        BigDecimal faturamentoMes,
+        @Schema(description = "Quantidade por status (todos os status presentes, ausência = 0)")
         Map<String, Long> pedidosPorStatus,
-
-        @Schema(description = "Orçamentos por status")
-        Map<String, Long> orcamentosPorStatus,
-
-        @Schema(description = "Impressoras por situação operacional")
-        Map<String, Long> impressorasPorStatus,
-
-        @Schema(description = "Filamentos ativos com estoque menor ou igual ao mínimo")
-        long filamentosEstoqueBaixo,
-
-        @Schema(description = "Itens de estoque ativos com quantidade menor ou igual à mínima")
-        long itensEstoqueBaixo,
-
-        long clientesAtivos,
-
-        @Schema(description = "Jobs de impressão em andamento agora")
-        long impressoesEmAndamento,
-
-        @Schema(description = "Pedidos abertos no mês corrente")
-        long pedidosMesAtual,
-
-        @Schema(description = "Soma do valor total dos pedidos ENTREGUES no mês corrente")
-        BigDecimal faturamentoMesAtual
+        @Schema(description = "Total de pedidos em aberto com prazo vencido")
+        long totalAtrasados,
+        @Schema(description = "Até 5 pedidos atrasados, o mais antigo primeiro")
+        List<OrderResponse> pedidosAtrasados,
+        @Schema(description = "Últimos 5 pedidos criados")
+        List<OrderResponse> ultimosPedidos
 ) {
 }

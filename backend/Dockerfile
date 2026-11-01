@@ -24,8 +24,7 @@ WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
 
-# Diretório de uploads (STL/3MF, fotos) com permissão para o usuário da aplicação
-RUN mkdir -p /app/uploads && chown -R spring:spring /app
+RUN chown -R spring:spring /app
 
 USER spring
 

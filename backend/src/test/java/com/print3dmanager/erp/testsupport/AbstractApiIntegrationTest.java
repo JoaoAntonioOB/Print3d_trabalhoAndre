@@ -19,9 +19,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 public abstract class AbstractApiIntegrationTest extends AbstractIntegrationTest {
 
-    /** Credenciais do admin semeado pela migração V11. */
-    protected static final String ADMIN_EMAIL = "admin@print3d.com";
-    protected static final String ADMIN_SENHA = "admin123";
+    /** Credenciais do usuário demo (migration V2). */
+    protected static final String DEMO_EMAIL = "demo@print3d.com";
+    protected static final String DEMO_SENHA = "admin123";
 
     @Autowired
     protected MockMvc mockMvc;
@@ -42,9 +42,9 @@ public abstract class AbstractApiIntegrationTest extends AbstractIntegrationTest
         return json(result);
     }
 
-    /** Access token do admin inicial. */
-    protected String loginAdmin() throws Exception {
-        return loginCompleto(ADMIN_EMAIL, ADMIN_SENHA).get("accessToken").asText();
+    /** Access token do usuário demo. */
+    protected String loginDemo() throws Exception {
+        return loginCompleto(DEMO_EMAIL, DEMO_SENHA).get("accessToken").asText();
     }
 
     protected JsonNode json(MvcResult result) throws Exception {

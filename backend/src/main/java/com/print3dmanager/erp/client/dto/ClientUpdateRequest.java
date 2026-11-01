@@ -1,11 +1,10 @@
 package com.print3dmanager.erp.client.dto;
 
-import com.print3dmanager.erp.client.model.PersonType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 @Schema(description = "Dados para atualização de cliente (PUT — substituição completa)")
@@ -19,11 +18,9 @@ public record ClientUpdateRequest(
         @Size(max = 160, message = "O e-mail deve ter no máximo 160 caracteres")
         String email,
 
-        @Size(max = 20, message = "O telefone deve ter no máximo 20 caracteres")
+        @Pattern(regexp = "\\(?\\d{2}\\)?\\s?\\d{4,5}-?\\d{4}", message = "Telefone inválido (ex.: (11) 91234-5678)")
         String telefone,
 
-        @NotNull(message = "O tipo de pessoa é obrigatório")
-        PersonType tipoPessoa,
 
         @Size(max = 18, message = "O CPF/CNPJ deve ter no máximo 18 caracteres")
         String cpfCnpj,

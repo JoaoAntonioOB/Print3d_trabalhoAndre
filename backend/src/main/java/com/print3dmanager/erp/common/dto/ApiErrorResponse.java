@@ -1,31 +1,22 @@
 package com.print3dmanager.erp.common.dto;
 
-import java.time.Instant;
 import java.util.List;
 
-/**
- * Formato padrão de erro da API — usado pelos handlers de segurança
- * (401/403) e pelo tratamento global de exceções. O campo errors só
- * aparece em erros de validação (Jackson omite nulos).
- */
+/** Formato padrão de erro da API: {@code { code, message, fieldErrors[] }}. */
 public record ApiErrorResponse(
-        Instant timestamp,
-        int status,
-        String error,
+        String code,
         String message,
-        String path,
-        List<FieldValidationError> errors
+        List<FieldError> fieldErrors
 ) {
 
-    public record FieldValidationError(String campo, String mensagem) {
+    public record FieldError(String field, String message) {
     }
 
-    public static ApiErrorResponse of(int status, String error, String message, String path) {
-        return new ApiErrorResponse(Instant.now(), status, error, message, path, null);
+    public static ApiErrorResponse of(String code, String message) {
+        return new ApiErrorResponse(code, message, List.of());
     }
 
-    public static ApiErrorResponse validacao(int status, String error, String message, String path,
-                                             List<FieldValidationError> errors) {
-        return new ApiErrorResponse(Instant.now(), status, error, message, path, errors);
+    public static ApiErrorResponse validation(String message, List<FieldError> fieldErrors) {
+        return new ApiErrorResponse("VALIDATION_ERROR", message, fieldErrors);
     }
 }
