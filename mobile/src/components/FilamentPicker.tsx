@@ -32,7 +32,7 @@ export function FilamentPicker({ selectedName, hint, onSelect }: Props) {
             mode="outlined"
             value={selectedName ?? ''}
             editable={false}
-            left={<TextInput.Icon icon="spool" />}
+            left={<TextInput.Icon icon="warehouse" />}
             right={<TextInput.Icon icon="chevron-right" />}
           />
         </View>

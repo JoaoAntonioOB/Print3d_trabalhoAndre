@@ -106,7 +106,7 @@ export default function FilamentDetail() {
       </View>
 
       <List.Section style={styles.card}>
-        <List.Item title={f.nome} description="Nome" left={(p) => <List.Icon {...p} icon="spool" />} />
+        <List.Item title={f.nome} description="Nome" left={(p) => <List.Icon {...p} icon="warehouse" />} />
         <Divider />
         <List.Item title={f.material} description="Material" left={(p) => <List.Icon {...p} icon="printer-3d-nozzle-outline" />} />
         <Divider />

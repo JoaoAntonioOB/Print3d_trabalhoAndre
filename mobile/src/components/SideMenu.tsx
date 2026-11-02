@@ -40,7 +40,7 @@ const SECTIONS: { title: string; items: Item[] }[] = [
   {
     title: 'Estoque',
     items: [
-      { label: 'Estoque', icon: 'spool', href: '/filaments' },
+      { label: 'Estoque', icon: 'warehouse', href: '/filaments' },
     ],
   },
 ];

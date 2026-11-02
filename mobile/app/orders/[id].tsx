@@ -116,7 +116,7 @@ export default function OrderDetail() {
             <List.Item
               title={o.filamentoNome ?? `Filamento #${o.filamentoId}`}
               description="Filamento do estoque"
-              left={(p) => <List.Icon {...p} icon="spool" />}
+              left={(p) => <List.Icon {...p} icon="warehouse" />}
               right={(p) => <List.Icon {...p} icon="chevron-right" />}
               onPress={() => router.push({ pathname: '/filaments/[id]', params: { id: String(o.filamentoId) } })}
             />

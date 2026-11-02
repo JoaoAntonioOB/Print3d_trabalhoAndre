@@ -37,7 +37,7 @@ export default function SelectFilament() {
   else if (items.length === 0) {
     body = (
       <EmptyState
-        icon={busca ? 'magnify' : 'spool'}
+        icon={busca ? 'magnify' : 'warehouse'}
         message={busca ? `Nenhum filamento encontrado para "${busca}".` : 'Nenhum filamento cadastrado.'}
         actionLabel={busca ? undefined : 'Cadastrar filamento'}
         onAction={busca ? undefined : () => router.push('/filaments/form')}
@@ -68,7 +68,7 @@ export default function SelectFilament() {
           <List.Item
             title={item.nome}
             description={`${[item.material, item.cor].filter(Boolean).join(' · ')} · saldo ${formatWeight(item.quantidadeGramas)}${item.abaixoDoMinimo ? ' (baixo)' : ''}`}
-            left={(p) => <List.Icon {...p} icon="spool" />}
+            left={(p) => <List.Icon {...p} icon="warehouse" />}
             style={styles.item}
             onPress={() => {
               setPickedFilament({ id: item.id, nome: item.nome, material: item.material, quantidadeGramas: item.quantidadeGramas });

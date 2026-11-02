@@ -121,7 +121,7 @@ export default function FilamentForm() {
       <FormScroll>
         <Controller control={control} name="nome" render={({ field: { value, onChange, onBlur } }) => (
           <View>
-            <TextInput label="Nome *" mode="outlined" left={<TextInput.Icon icon="spool" />} value={value} onChangeText={onChange} onBlur={onBlur} error={!!msg('nome')} />
+            <TextInput label="Nome *" mode="outlined" left={<TextInput.Icon icon="warehouse" />} value={value} onChangeText={onChange} onBlur={onBlur} error={!!msg('nome')} />
             <HelperText type="error" visible={!!msg('nome')}>{msg('nome')}</HelperText>
           </View>
         )} />

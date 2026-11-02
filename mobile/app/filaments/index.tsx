@@ -41,7 +41,7 @@ export default function FilamentsList() {
       <EmptyState icon="magnify" message={`Nenhum filamento encontrado para "${busca}".`} />
     ) : (
       <EmptyState
-        icon="spool"
+        icon="warehouse"
         message="Nenhum filamento cadastrado ainda."
         actionLabel="Cadastrar filamento"
         onAction={() => router.push('/filaments/form')}
@@ -66,7 +66,7 @@ export default function FilamentsList() {
           <List.Item
             title={item.nome}
             description={[item.material, item.cor, item.marca].filter(Boolean).join(' · ')}
-            left={(p) => <List.Icon {...p} icon="spool" />}
+            left={(p) => <List.Icon {...p} icon="warehouse" />}
             right={() => (
               <View style={styles.right}>
                 <Text style={[styles.balance, item.abaixoDoMinimo && styles.low]}>{formatWeight(item.quantidadeGramas)}</Text>
