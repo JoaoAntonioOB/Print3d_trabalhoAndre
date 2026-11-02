@@ -61,6 +61,8 @@ O usuário `demo@print3d.com` / `admin123` e os dados de exemplo ficam acessíve
 ## Problemas comuns
 | Sintoma | Causa provável |
 |---|---|
+| Log: `'url' must start with "jdbc"` | `DATABASE_URL` colada no formato do Neon (`postgresql://usuário:senha@…`); use `jdbc:postgresql://HOST/neondb?sslmode=require` |
+| "No open ports detected" | consequência: a API caiu antes de abrir a porta; veja o `Caused by` no log |
 | Deploy cai em "password authentication failed" | usuário/senha trocados ou copiados com espaço |
 | "The connection attempt failed" / SSL | faltou `?sslmode=require` na `DATABASE_URL` |
 | Erros do Flyway (lock/advisory) | `DATABASE_URL` com host `-pooler`; use a conexão direta |
