@@ -6,10 +6,11 @@ Pequenas empresas de impressão 3D controlam **clientes e pedidos em planilhas e
 **Público:** donos e operadores dessas empresas.
 
 ## A solução
-App mobile (React Native/Expo) que centraliza **clientes, pedidos e indicadores**, com:
+App mobile (React Native/Expo) que centraliza **clientes, pedidos, estoque de filamentos e indicadores**, com:
 - login seguro (só quem tem conta acessa);
 - cadastro de clientes com **endereço preenchido automaticamente pelo CEP** e **dados da empresa preenchidos pelo CNPJ**;
 - pedidos com **ciclo de status controlado** (Pendente → Em produção → Concluído → Entregue, ou Cancelado);
+- **estoque de filamentos**: o saldo em gramas é descontado sozinho quando o pedido entra em produção e devolvido se for cancelado, com histórico e alerta de estoque baixo;
 - **dashboard** que responde primeiro "o que está na fila e o que está atrasado?" e traz indicadores de gestão: faturamento do mês, ticket médio, valor a receber, material usado, vendas dos últimos 6 meses (gráfico de colunas), fila de produção por status, vencimentos da semana, pedidos atrasados, maiores clientes e uso por material.
 
 ## Arquitetura (BFF)
@@ -58,6 +59,7 @@ Pré-requisitos: banco e API no ar, celular na mesma rede (ver README). Os dados
 4. **Erro tratado** — tentar um CEP inexistente (`99999-999`): mensagem amigável e cadastro continua possível. Tentar salvar sem nome: campo marcado.
 5. **Pedido** — no cliente recém-criado, **Pedidos** → botão **Novo** (ou **Novo pedido** no detalhe do cliente) (material PLA, peso `120,5`, valor `45,90`, prazo futuro). Tentar prazo no passado → erro no campo.
 6. **Status** — no detalhe, avançar *Iniciar produção → Concluído → Entregue*; mostrar que só aparecem as transições válidas e que **cancelar** pede confirmação. Pedido entregue não pode mais ser alterado.
+6b. **Estoque** — menu lateral → **Estoque**: mostrar os filamentos e o selo de estoque baixo. Em um pedido novo, escolher um filamento (o material é preenchido e o saldo aparece), **Iniciar produção** e voltar ao Estoque: o saldo caiu e o histórico tem a saída. **Cancelar** o pedido devolve o saldo. Um pedido maior que o saldo → "Estoque insuficiente..." (400).
 7. **Regra de negócio** — tentar excluir um cliente que tem pedidos → "Não é possível excluir o cliente X: ele possui pedidos." (409).
 8. **Volta ao dashboard** — os números e o gráfico mudaram. **Sair** → volta ao login; sem token as rotas não abrem.
 
@@ -68,6 +70,7 @@ Pré-requisitos: banco e API no ar, celular na mesma rede (ver README). Os dados
 | Login e autenticação, funcionalidades só para autenticados | Login JWT na API; rotas do app protegidas; logout; 401 derruba a sessão; token no armazenamento seguro | `app/login.tsx`, `AuthContext`, `security/` |
 | Dashboard com indicadores relevantes | 13 indicadores e painéis: pedidos em aberto e valor a receber, faturamento do mês, ticket médio, clientes, material usado (kg), vendas por mês (gráfico de 6 meses), fila de produção, vencimentos da semana, atrasados, maiores clientes, uso por material, últimos pedidos | `app/index.tsx`, `GET /api/dashboard` |
 | Cadastro, consulta, edição e exclusão | CRUD de **Clientes** e **Pedidos** (busca, filtro por status, paginação) | `app/clients/*`, `app/orders/*` |
+| Controle de estoque de filamentos | Cadastro, entradas e histórico; desconto automático ao iniciar produção, estorno ao cancelar; alerta de estoque baixo no painel | `app/filaments/*`, `/api/filaments` |
 | Integração com API externa | **ViaCEP** (CEP) e **BrasilAPI** (CNPJ) no cadastro de cliente | `cep/*`, `cnpj/*` (API), `clients/form.tsx` |
 | API BFF com regras de negócio e persistência; app sem acesso direto ao banco | Spring Boot + PostgreSQL com Flyway; o app só fala HTTP com a API | `backend/` |
 | Fluxo completo, validação de campos, tratamento de erros, mensagens claras | Zod no app + Bean Validation na API + erro padrão `{code, message, fieldErrors[]}`; estados de carregando, vazio e erro | todas as telas |
@@ -76,6 +79,7 @@ Pré-requisitos: banco e API no ar, celular na mesma rede (ver README). Os dados
 ## Regras de negócio (na API)
 - Cliente: nome obrigatório; e-mail e telefone válidos; CEP com 8 dígitos; CPF/CNPJ único; **não pode ser excluído se tiver pedidos** (409).
 - Pedido: cliente existente; valor e peso > 0 (até 2 casas); prazo não pode estar no passado na criação; transições `PENDENTE → EM_PRODUCAO → CONCLUIDO → ENTREGUE` e `CANCELADO` a partir de PENDENTE/EM_PRODUCAO; só PENDENTE/EM_PRODUCAO podem ser editados; só PENDENTE/CANCELADO podem ser excluídos.
+- Estoque: o filamento do pedido é opcional; o peso é descontado ao iniciar produção e estornado ao cancelar de EM_PRODUCAO; saldo nunca fica negativo (400); filamento usado por pedidos não pode ser excluído (409).
 
 ## Segurança (resumo)
 - Senhas com BCrypt; JWT assinado (segredo só por variável de ambiente em produção; a API recusa subir sem ele).
@@ -86,4 +90,4 @@ Pré-requisitos: banco e API no ar, celular na mesma rede (ver README). Os dados
 ## Tecnologias
 **App:** Expo, TypeScript, Expo Router, React Native Paper, TanStack Query, React Hook Form + Zod, axios, expo-secure-store.
 **API:** Java 21, Spring Boot 3.5, Spring Security + JWT, JPA, Flyway, MapStruct, PostgreSQL 16.
-**Testes:** 45 automatizados (unitários das regras de status e dos clientes ViaCEP e BrasilAPI com HTTP simulado; integração com PostgreSQL real via Testcontainers).
+**Testes:** 60 automatizados (unitários das regras de status e dos clientes ViaCEP e BrasilAPI com HTTP simulado; integração com PostgreSQL real via Testcontainers).
