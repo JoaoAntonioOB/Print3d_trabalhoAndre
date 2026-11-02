@@ -21,10 +21,15 @@
 
 - **Hospedagem preparada:** `render.yaml` (API em Ohio, plano gratuito), `Dockerfile` ajustado para 512 MB (testado em contêiner com 512 MB / 0,5 CPU contra o Neon de Ohio: sobe em ~37 s, ~260 MB, sem erros), banco no Neon com as migrations V1–V4 já aplicadas e `docs/HOSPEDAGEM.md`. Falta enviar o código ao GitHub e criar o serviço no Render.
 
+- **Marco 7 — Estoque de filamentos** (spec em `docs/specs/07-estoque.md`): cadastro com saldo em gramas e estoque mínimo, entradas com histórico, seletor de filamento no pedido (material herdado, desconto ao iniciar produção, estorno ao cancelar), alerta de estoque baixo no painel. Migrações `V5` (schema) e `V6` (seed de demonstração). Testado: 60 testes do backend passando, `tsc` do app ok. Telas ainda não conferidas no Expo Go.
+
 ## Pendências / opcionais
 - Renomear `backend/` → `api/` (a pasta estava travada pela IDE); ajustar caminhos nos docs e no CI.
 - Validar o layout revisado e o Marco 4/5 no iPhone (a revisão visual não pôde ser feita pelo assistente).
 - Hospedagem da API e do banco para a apresentação (ver README, seção Produção).
+- Conferir as telas de estoque no Expo Go (lista, detalhe, formulário, seletor no pedido e alerta no painel).
+- `AJUSTE` existe no enum `TipoMovimento` e no banco, mas nenhum fluxo o grava; ou se implementa ou se remove.
+- Filamento com saldo 0 e mínimo 0 entra no alerta (regra saldo ≤ mínimo); confirmar se é o comportamento desejado.
 
 ## Decisões
 - Nomes do domínio em português (tabelas e campos), como no código herdado.
@@ -32,3 +37,7 @@
 - Faturamento do mês = soma dos pedidos **criados** no mês, exceto cancelados.
 - Seed de demonstração como migration Flyway (`V3`); em produção real, remover `V2`/`V3`.
 - Login do Expo CLI via `EXPO_TOKEN` (o fluxo de navegador falha no Windows desta máquina).
+- Estoque: o desconto acontece em PENDENTE→EM_PRODUCAO e o estorno ao cancelar a partir de EM_PRODUCAO. Editar um pedido em EM_PRODUCAO estorna e desconta de novo (reconcilia). Editar em PENDENTE não mexe no estoque.
+- Um filamento por pedido, opcional. Pedidos antigos sem filamento não descontam nada. O material do pedido vem do filamento quando ele é informado.
+- Saldo por filamento, sem controle de rolo (bobina). Sem dono por usuário: todo usuário autenticado vê e altera todo o estoque.
+- Migrações: `V5` (schema) e `V6` (seed de demonstração). O Flyway aplica as pendentes ao subir a API, então as duas vão ao Neon no próximo deploy. `V6` segue a regra de `V2`/`V3`: fora em produção real.

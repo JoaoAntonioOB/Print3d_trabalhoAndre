@@ -45,10 +45,13 @@ export type Order = {
   /** AAAA-MM-DD */
   prazo: string;
   status: OrderStatus;
+  filamentoId?: number | null;
+  filamentoNome?: string | null;
 };
 
 export type OrderInput = {
   clienteId: number;
+  filamentoId?: number;
   descricao: string;
   material: string;
   pesoGramas: number;

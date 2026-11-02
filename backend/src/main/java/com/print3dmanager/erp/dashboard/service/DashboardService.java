@@ -3,7 +3,9 @@ package com.print3dmanager.erp.dashboard.service;
 import com.print3dmanager.erp.client.repository.ClientRepository;
 import com.print3dmanager.erp.dashboard.dto.ClienteTop;
 import com.print3dmanager.erp.dashboard.dto.DashboardResumoResponse;
+import com.print3dmanager.erp.dashboard.dto.FilamentoBaixo;
 import com.print3dmanager.erp.dashboard.dto.MaterialUso;
+import com.print3dmanager.erp.filament.repository.FilamentRepository;
 import com.print3dmanager.erp.dashboard.dto.VendaMensal;
 import com.print3dmanager.erp.order.dto.OrderResponse;
 import com.print3dmanager.erp.order.mapper.OrderMapper;
@@ -41,6 +43,7 @@ public class DashboardService {
     private final OrderRepository orderRepository;
     private final ClientRepository clientRepository;
     private final OrderMapper orderMapper;
+    private final FilamentRepository filamentRepository;
 
     @Transactional(readOnly = true)
     public DashboardResumoResponse resumo() {
@@ -79,7 +82,11 @@ public class DashboardService {
                 maioresClientes(),
                 materiais(),
                 paraResposta(orderRepository.findByStatusInAndPrazoBetweenOrderByPrazoAsc(
-                        ABERTOS, hoje, hoje.plusDays(DIAS_PROXIMOS_VENCIMENTOS), TOP_5)));
+                        ABERTOS, hoje, hoje.plusDays(DIAS_PROXIMOS_VENCIMENTOS), TOP_5)),
+                filamentRepository.abaixoDoMinimo(TOP_5).stream()
+                        .map(f -> new FilamentoBaixo(f.getId(), f.getNome(),
+                                f.getQuantidadeGramas(), f.getEstoqueMinimoGramas()))
+                        .toList());
     }
 
     /** Últimos {@value MESES} meses em ordem cronológica; meses sem venda saem com zero. */

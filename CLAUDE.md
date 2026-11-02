@@ -14,16 +14,17 @@ App mobile (faculdade) que resolve o controle de clientes e pedidos de pequenas 
 - App: `cd mobile && npx expo start`
 
 ## Escopo (nada além disso)
-Login JWT · Clientes (CRUD + CEP via ViaCEP + CNPJ via BrasilAPI) · Pedidos (CRUD + status) · Dashboard (`GET /api/dashboard`).
+Login JWT · Clientes (CRUD + CEP via ViaCEP + CNPJ via BrasilAPI) · Pedidos (CRUD + status) · Estoque de filamentos (saldo, entradas, desconto no pedido) · Dashboard (`GET /api/dashboard`).
 
 ## Convenções
-- Package-by-feature em `com.print3dmanager.erp`: `security`, `user`, `client`, `order`, `dashboard`, `cep`, `cnpj`.
-- Schema só por Flyway (`V1` schema, `V2` seed do usuário demo). Valores monetários `numeric(12,2)`.
+- Package-by-feature em `com.print3dmanager.erp`: `security`, `user`, `client`, `order`, `filament`, `dashboard`, `cep`, `cnpj`.
+- Schema só por Flyway (`V1` schema, `V2` seed do usuário demo, `V5` estoque, `V6` seed de filamentos). Valores monetários `numeric(12,2)`.
 - Entidades JPA nunca saem da API: DTOs `record` + MapStruct. Regras de negócio nos services.
 - Erro padrão `{ code, message, fieldErrors[] }`; o app exibe `message` e marca `fieldErrors`.
 - Nomes do domínio em português (tabelas `usuarios`, `clientes`, `pedidos`; campos `nome`, `valor`, `prazo`).
 - Pedido: `PENDENTE → EM_PRODUCAO → CONCLUIDO → ENTREGUE`; `CANCELADO` a partir de PENDENTE/EM_PRODUCAO; só PENDENTE/EM_PRODUCAO são editáveis.
 - Cliente com pedidos não pode ser excluído (409).
+- Estoque: desconta ao iniciar produção (PENDENTE→EM_PRODUCAO), estorna ao cancelar de EM_PRODUCAO; saldo nunca negativo; pedido sem filamento não mexe no estoque.
 - ViaCEP e BrasilAPI: o app chama `GET /api/cep/{cep}` e `GET /api/cnpj/{cnpj}` na API, nunca os serviços externos direto; falha externa não bloqueia o cadastro.
 
 ## Segurança

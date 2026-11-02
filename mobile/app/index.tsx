@@ -166,6 +166,28 @@ export default function Dashboard() {
           </View>
         </View>
 
+        {(d.filamentosAbaixoMinimo ?? []).length > 0 ? (
+          <Section title="Estoque baixo" count={d.filamentosAbaixoMinimo.length} hint="Filamentos abaixo do mínimo: hora de repor">
+            <View style={styles.panel}>
+              {d.filamentosAbaixoMinimo.map((f, i) => (
+                <Pressable
+                  key={f.id}
+                  style={[styles.orderRow, i < d.filamentosAbaixoMinimo.length - 1 && styles.rowRule]}
+                  onPress={() => router.push({ pathname: '/filaments/[id]', params: { id: String(f.id) } })}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${f.nome}, saldo ${formatWeight(f.quantidadeGramas)}`}
+                >
+                  <View style={styles.flex}>
+                    <Text variant="titleSmall" numberOfLines={1} style={styles.text}>{f.nome}</Text>
+                    <Text variant="bodySmall" style={styles.muted}>Mínimo {formatWeight(f.estoqueMinimoGramas)}</Text>
+                  </View>
+                  <Text variant="titleSmall" style={[styles.alertText, num]}>{formatWeight(f.quantidadeGramas)}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </Section>
+        ) : null}
+
         <Section
           title="Vendas por mês"
           hint={`Últimos 6 meses · ${formatBRL(totalSeisMeses)} no período · valores em R$`}

@@ -31,6 +31,8 @@ public record OrderCreateRequest(
         BigDecimal valor,
         @NotNull(message = "O prazo é obrigatório")
         @FutureOrPresent(message = "O prazo não pode estar no passado")
-        LocalDate prazo
+        LocalDate prazo,
+        @Schema(description = "Filamento do estoque usado (opcional); define o material do pedido")
+        Long filamentoId
 ) {
 }

@@ -15,6 +15,8 @@ public record OrderResponse(
         BigDecimal valor,
         LocalDate prazo,
         OrderStatus status,
+        Long filamentoId,
+        String filamentoNome,
         Instant criadoEm,
         Instant atualizadoEm
 ) {

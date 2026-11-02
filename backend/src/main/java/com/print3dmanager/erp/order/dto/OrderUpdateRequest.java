@@ -28,6 +28,8 @@ public record OrderUpdateRequest(
         @Digits(integer = 10, fraction = 2, message = "Valor inválido (até 2 casas decimais)")
         BigDecimal valor,
         @NotNull(message = "O prazo é obrigatório")
-        LocalDate prazo
+        LocalDate prazo,
+        @Schema(description = "Filamento do estoque usado (opcional); define o material do pedido")
+        Long filamentoId
 ) {
 }

@@ -34,6 +34,8 @@ export default function OrderDetail() {
   const refreshLists = () => Promise.all([
     queryClient.invalidateQueries({ queryKey: ['orders'] }),
     queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+    queryClient.invalidateQueries({ queryKey: ['filaments'] }),
+    queryClient.invalidateQueries({ queryKey: ['filament'] }),
   ]);
 
   const changeStatus = useMutation({
@@ -107,6 +109,19 @@ export default function OrderDetail() {
         />
         <Divider />
         <List.Item title={o.material} description="Material" left={(p) => <List.Icon {...p} icon="printer-3d-nozzle-outline" />} />
+        <Divider />
+        {o.filamentoId ? (
+          <>
+            <Divider />
+            <List.Item
+              title={o.filamentoNome ?? `Filamento #${o.filamentoId}`}
+              description="Filamento do estoque"
+              left={(p) => <List.Icon {...p} icon="spool" />}
+              right={(p) => <List.Icon {...p} icon="chevron-right" />}
+              onPress={() => router.push({ pathname: '/filaments/[id]', params: { id: String(o.filamentoId) } })}
+            />
+          </>
+        ) : null}
         <Divider />
         <List.Item title={formatGrams(o.pesoGramas)} description="Peso" left={(p) => <List.Icon {...p} icon="weight-gram" />} />
         <Divider />

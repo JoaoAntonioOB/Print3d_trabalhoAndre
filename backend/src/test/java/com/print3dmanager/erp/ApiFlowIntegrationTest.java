@@ -25,7 +25,100 @@ class ApiFlowIntegrationTest extends AbstractApiIntegrationTest {
 
     @BeforeEach
     void limparDados() {
-        jdbc.execute("TRUNCATE pedidos, clientes RESTART IDENTITY CASCADE");
+        jdbc.execute("TRUNCATE movimentacoes_estoque, pedidos, clientes, filamentos RESTART IDENTITY CASCADE");
+    }
+
+    @Test
+    @DisplayName("estoque: iniciar produção desconta, cancelar devolve, falta de saldo dá 400 e uso bloqueia exclusão")
+    void fluxoEstoqueFilamento() throws Exception {
+        String auth = bearer(loginDemo());
+        long filamentoId = objectMapper.readTree(mockMvc.perform(post("/filaments")
+                        .header(HttpHeaders.AUTHORIZATION, auth).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"PLA Teste\",\"material\":\"pla\",\"cor\":\"Azul\","
+                                + "\"marca\":\"X\",\"quantidadeGramas\":500,\"estoqueMinimoGramas\":100}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.material").value("PLA"))
+                .andExpect(jsonPath("$.abaixoDoMinimo").value(false))
+                .andReturn().getResponse().getContentAsString()).get("id").asLong();
+        long clienteId = objectMapper.readTree(mockMvc.perform(post("/clients")
+                        .header(HttpHeaders.AUTHORIZATION, auth).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Cliente Estoque\"}"))
+                .andReturn().getResponse().getContentAsString()).get("id").asLong();
+
+        long pedidoId = criarPedido(auth, clienteId, filamentoId, 120);
+        long grande = criarPedido(auth, clienteId, filamentoId, 600);
+
+        // pedido vinculado herda o material do filamento (mesmo que o corpo diga outro)
+        mockMvc.perform(get("/orders/" + pedidoId).header(HttpHeaders.AUTHORIZATION, auth))
+                .andExpect(jsonPath("$.filamentoId").value(filamentoId))
+                .andExpect(jsonPath("$.filamentoNome").value("PLA Teste"))
+                .andExpect(jsonPath("$.material").value("PLA"));
+
+        mudarStatus(auth, pedidoId, "EM_PRODUCAO").andExpect(status().isOk());
+        mockMvc.perform(get("/filaments/" + filamentoId).header(HttpHeaders.AUTHORIZATION, auth))
+                .andExpect(jsonPath("$.quantidadeGramas").value(380));
+
+        mudarStatus(auth, grande, "EM_PRODUCAO")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BUSINESS_RULE"))
+                .andExpect(jsonPath("$.message").value(
+                        "Estoque insuficiente de PLA Teste: disponível 380g, necessário 600g"));
+
+        mockMvc.perform(delete("/filaments/" + filamentoId).header(HttpHeaders.AUTHORIZATION, auth))
+                .andExpect(status().isConflict());
+
+        mudarStatus(auth, pedidoId, "CANCELADO").andExpect(status().isOk());
+        mockMvc.perform(get("/filaments/" + filamentoId).header(HttpHeaders.AUTHORIZATION, auth))
+                .andExpect(jsonPath("$.quantidadeGramas").value(500));
+
+        mockMvc.perform(post("/filaments/" + filamentoId + "/entradas")
+                        .header(HttpHeaders.AUTHORIZATION, auth).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"gramas\":250}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.quantidadeGramas").value(750));
+
+        // histórico: entrada inicial, saída, estorno, entrada (mais recente primeiro)
+        mockMvc.perform(get("/filaments/" + filamentoId + "/movimentacoes")
+                        .header(HttpHeaders.AUTHORIZATION, auth))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(4))
+                .andExpect(jsonPath("$[0].tipo").value("ENTRADA"))
+                .andExpect(jsonPath("$[1].tipo").value("ESTORNO"))
+                .andExpect(jsonPath("$[1].pedidoId").value(pedidoId))
+                .andExpect(jsonPath("$[2].tipo").value("SAIDA"))
+                .andExpect(jsonPath("$[3].tipo").value("ENTRADA"));
+
+        mockMvc.perform(get("/filaments").param("busca", "teste").param("material", "pla")
+                        .header(HttpHeaders.AUTHORIZATION, auth))
+                .andExpect(jsonPath("$.content[0].id").value(filamentoId));
+
+        // saldo abaixo do mínimo aparece no dashboard
+        mockMvc.perform(post("/filaments").header(HttpHeaders.AUTHORIZATION, auth)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"PETG Baixo\",\"material\":\"PETG\","
+                                + "\"quantidadeGramas\":50,\"estoqueMinimoGramas\":100}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.abaixoDoMinimo").value(true));
+        mockMvc.perform(get("/dashboard").header(HttpHeaders.AUTHORIZATION, auth))
+                .andExpect(jsonPath("$.filamentosAbaixoMinimo.length()").value(1))
+                .andExpect(jsonPath("$.filamentosAbaixoMinimo[0].nome").value("PETG Baixo"));
+    }
+
+    private long criarPedido(String auth, long clienteId, long filamentoId, int peso) throws Exception {
+        return objectMapper.readTree(mockMvc.perform(post("/orders")
+                        .header(HttpHeaders.AUTHORIZATION, auth).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"clienteId\":%d,\"descricao\":\"Peça\",\"material\":\"abs\",".formatted(clienteId)
+                                + "\"pesoGramas\":%d,\"valor\":20,\"prazo\":\"".formatted(peso)
+                                + LocalDate.now().plusDays(4) + "\",\"filamentoId\":" + filamentoId + "}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asLong();
+    }
+
+    private org.springframework.test.web.servlet.ResultActions mudarStatus(
+            String auth, long pedidoId, String novo) throws Exception {
+        return mockMvc.perform(patch("/orders/" + pedidoId + "/status")
+                .header(HttpHeaders.AUTHORIZATION, auth).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"" + novo + "\"}"));
     }
 
     @Test

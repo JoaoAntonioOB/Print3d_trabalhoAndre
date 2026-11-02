@@ -12,9 +12,12 @@ import { canEdit, createOrder, getOrder, updateOrder, type OrderInput } from '..
 import { FormScroll } from '../../src/components/FormScroll';
 import { Screen } from '../../src/components/Screen';
 import { ClientPicker } from '../../src/components/ClientPicker';
+import { FilamentPicker } from '../../src/components/FilamentPicker';
+import { getFilament } from '../../src/api/filaments';
+import type { PickedFilament } from '../../src/utils/pickerBus';
 import { LoadingState } from '../../src/components/ScreenState';
 import { colors, spacing } from '../../src/theme';
-import { brToIso, isoToBr, maskDate, parseDecimal, todayIso } from '../../src/utils/format';
+import { brToIso, formatWeight, isoToBr, maskDate, parseDecimal, todayIso } from '../../src/utils/format';
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -48,6 +51,8 @@ export default function OrderForm() {
   const queryClient = useQueryClient();
   const [clientName, setClientName] = useState<string | undefined>();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [filament, setFilament] = useState<{ id: number; nome: string } | null>(null);
+  const [pickedBalance, setPickedBalance] = useState<number | undefined>();
 
   const existing = useQuery({
     queryKey: ['order', editingId],
@@ -67,6 +72,7 @@ export default function OrderForm() {
         prazo: isoToBr(o.prazo),
       });
       setClientName(o.clienteNome);
+      setFilament(o.filamentoId ? { id: o.filamentoId, nome: o.filamentoNome ?? `Filamento #${o.filamentoId}` } : null);
     }
   }, [existing.data, reset]);
 
@@ -89,6 +95,23 @@ export default function OrderForm() {
     [setValue],
   );
 
+  const onSelectFilament = useCallback(
+    (f: PickedFilament | null) => {
+      setFilament(f ? { id: f.id, nome: f.nome } : null);
+      setPickedBalance(f ? f.quantidadeGramas : undefined);
+      if (f) setValue('material', f.material.toUpperCase(), { shouldValidate: true });
+    },
+    [setValue],
+  );
+
+  // Saldo do filamento já vinculado (edição): vem da API.
+  const linked = useQuery({
+    queryKey: ['filament', filament?.id],
+    queryFn: () => getFilament(filament!.id),
+    enabled: filament !== null && pickedBalance === undefined,
+  });
+  const balance = pickedBalance ?? linked.data?.quantidadeGramas;
+
   const save = useMutation({
     mutationFn: (input: OrderInput) =>
       editingId !== undefined ? updateOrder(editingId, input) : createOrder(input),
@@ -97,6 +120,8 @@ export default function OrderForm() {
         queryClient.invalidateQueries({ queryKey: ['orders'] }),
         queryClient.invalidateQueries({ queryKey: ['order'] }),
         queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+        queryClient.invalidateQueries({ queryKey: ['filaments'] }),
+        queryClient.invalidateQueries({ queryKey: ['filament'] }),
       ]);
       router.back();
     },
@@ -113,6 +138,7 @@ export default function OrderForm() {
     try {
       await save.mutateAsync({
         clienteId: data.clienteId,
+        filamentoId: filament?.id,
         descricao: data.descricao.trim(),
         material: data.material.trim().toUpperCase(),
         pesoGramas: round2(parseDecimal(data.pesoGramas)),
@@ -152,6 +178,12 @@ export default function OrderForm() {
           selectedName={clientName}
           error={msg('clienteId')}
           onSelect={onSelectClient}
+        />
+
+        <FilamentPicker
+          selectedName={filament?.nome}
+          hint={filament && balance !== undefined ? `Saldo disponível: ${formatWeight(balance)}` : undefined}
+          onSelect={onSelectFilament}
         />
 
         <Controller control={control} name="descricao" render={({ field: { value, onChange, onBlur } }) => (

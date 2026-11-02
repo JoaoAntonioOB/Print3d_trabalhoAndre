@@ -20,10 +20,12 @@ public interface OrderRepository
         extends JpaRepository<Order, Long>, JpaSpecificationExecutor<Order> {
 
     @Override
-    @EntityGraph(attributePaths = "cliente")
+    @EntityGraph(attributePaths = {"cliente", "filamento"})
     Page<Order> findAll(Specification<Order> spec, Pageable pageable);
 
     boolean existsByClienteId(Long clienteId);
+
+    boolean existsByFilamentoId(Long filamentoId);
 
     // ---- consultas do dashboard ----
 
@@ -39,11 +41,11 @@ public interface OrderRepository
 
     long countByStatusInAndPrazoBefore(Collection<OrderStatus> status, LocalDate data);
 
-    @EntityGraph(attributePaths = "cliente")
+    @EntityGraph(attributePaths = {"cliente", "filamento"})
     List<Order> findByStatusInAndPrazoBeforeOrderByPrazoAsc(
             Collection<OrderStatus> status, LocalDate data, Pageable pageable);
 
-    @EntityGraph(attributePaths = "cliente")
+    @EntityGraph(attributePaths = {"cliente", "filamento"})
     List<Order> findAllByOrderByCriadoEmDesc(Pageable pageable);
 
     // ---- indicadores adicionais do dashboard ----
@@ -83,7 +85,7 @@ public interface OrderRepository
             """)
     List<Object[]> usoPorMaterial(@Param("ignorado") OrderStatus ignorado);
 
-    @EntityGraph(attributePaths = "cliente")
+    @EntityGraph(attributePaths = {"cliente", "filamento"})
     List<Order> findByStatusInAndPrazoBetweenOrderByPrazoAsc(
             Collection<OrderStatus> status, LocalDate de, LocalDate ate, Pageable pageable);
 }

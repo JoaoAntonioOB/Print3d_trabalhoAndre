@@ -2,6 +2,7 @@ package com.print3dmanager.erp.order.model;
 
 import com.print3dmanager.erp.client.model.Client;
 import com.print3dmanager.erp.common.model.BaseEntity;
+import com.print3dmanager.erp.filament.model.Filament;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -42,6 +43,14 @@ public class Order extends BaseEntity {
 
     @Column(nullable = false)
     private LocalDate prazo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "filamento_id")
+    private Filament filamento;
+
+    /** Gramas já descontadas do estoque por este pedido (nulo = nada descontado). */
+    @Column(name = "gramas_descontadas", precision = 12, scale = 2)
+    private BigDecimal gramasDescontadas;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

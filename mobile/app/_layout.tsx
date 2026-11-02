@@ -41,6 +41,10 @@ function RootStack() {
         <Stack.Screen name="orders/[id]" />
         <Stack.Screen name="orders/form" />
         <Stack.Screen name="orders/select-client" />
+        <Stack.Screen name="orders/select-filament" />
+        <Stack.Screen name="filaments/index" />
+        <Stack.Screen name="filaments/[id]" />
+        <Stack.Screen name="filaments/form" />
       </Stack.Protected>
     </Stack>
   );

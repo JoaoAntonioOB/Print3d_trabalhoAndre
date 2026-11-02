@@ -34,6 +34,8 @@ public record DashboardResumoResponse(
         @Schema(description = "Uso por material, do mais pedido para o menos pedido (exceto cancelados)")
         List<MaterialUso> materiais,
         @Schema(description = "Até 5 pedidos em aberto que vencem nos próximos 7 dias (inclui hoje)")
-        List<OrderResponse> proximosVencimentos
+        List<OrderResponse> proximosVencimentos,
+        @Schema(description = "Até 5 filamentos com saldo menor ou igual ao estoque mínimo, os mais críticos primeiro")
+        List<FilamentoBaixo> filamentosAbaixoMinimo
 ) {
 }

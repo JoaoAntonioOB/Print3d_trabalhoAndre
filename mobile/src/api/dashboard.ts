@@ -5,7 +5,10 @@ export type VendaMensal = { mes: string; total: number; pedidos: number };
 export type ClienteTop = { clienteId: number; nome: string; pedidos: number; total: number };
 export type MaterialUso = { material: string; pedidos: number; pesoGramas: number; total: number };
 
+export type FilamentoBaixo = { id: number; nome: string; quantidadeGramas: number; estoqueMinimoGramas: number };
+
 export type Dashboard = {
+  filamentosAbaixoMinimo: FilamentoBaixo[];
   totalClientes: number;
   pedidosAbertos: number;
   faturamentoMes: number;

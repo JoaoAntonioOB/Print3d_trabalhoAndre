@@ -12,3 +12,18 @@ export function takePickedClient(): PickedClient | null {
   pending = null;
   return c;
 }
+
+/** Idem para o filamento do pedido. `null` significa "sem filamento" (limpar). */
+export type PickedFilament = { id: number; nome: string; material: string; quantidadeGramas: number };
+
+let pendingFilament: PickedFilament | null | undefined;
+
+export function setPickedFilament(f: PickedFilament | null) {
+  pendingFilament = f;
+}
+
+export function takePickedFilament(): PickedFilament | null | undefined {
+  const f = pendingFilament;
+  pendingFilament = undefined;
+  return f;
+}

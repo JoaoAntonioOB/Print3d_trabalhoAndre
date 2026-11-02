@@ -37,6 +37,12 @@ const SECTIONS: { title: string; items: Item[] }[] = [
       { label: 'Lista de pedidos', icon: 'clipboard-list-outline', href: '/orders' },
     ],
   },
+  {
+    title: 'Estoque',
+    items: [
+      { label: 'Estoque', icon: 'spool', href: '/filaments' },
+    ],
+  },
 ];
 
 export function MenuProvider({ children }: { children: ReactNode }) {

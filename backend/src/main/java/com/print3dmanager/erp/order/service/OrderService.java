@@ -13,6 +13,10 @@ import com.print3dmanager.erp.order.model.Order;
 import com.print3dmanager.erp.order.model.OrderStatus;
 import com.print3dmanager.erp.order.repository.OrderRepository;
 import com.print3dmanager.erp.order.repository.OrderSpecifications;
+import com.print3dmanager.erp.filament.model.Filament;
+import com.print3dmanager.erp.filament.service.FilamentService;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +42,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ClientRepository clientRepository;
     private final OrderMapper orderMapper;
+    private final FilamentService filamentService;
 
     @Transactional(readOnly = true)
     public PageResponse<OrderResponse> listar(String busca, OrderStatus status, Long clienteId,
@@ -55,12 +60,8 @@ public class OrderService {
     @Transactional
     public OrderResponse criar(OrderCreateRequest request) {
         Order pedido = new Order();
-        pedido.setCliente(obterCliente(request.clienteId()));
-        pedido.setDescricao(request.descricao().trim());
-        pedido.setMaterial(request.material().trim().toUpperCase());
-        pedido.setPesoGramas(request.pesoGramas());
-        pedido.setValor(request.valor());
-        pedido.setPrazo(request.prazo());
+        preencher(pedido, request.clienteId(), request.descricao(), request.material(),
+                request.pesoGramas(), request.valor(), request.prazo(), request.filamentoId());
         return orderMapper.toResponse(orderRepository.save(pedido));
     }
 
@@ -71,12 +72,16 @@ public class OrderService {
             throw new BusinessException(
                     "Pedido %s não pode ser editado.".formatted(pedido.getStatus()));
         }
-        pedido.setCliente(obterCliente(request.clienteId()));
-        pedido.setDescricao(request.descricao().trim());
-        pedido.setMaterial(request.material().trim().toUpperCase());
-        pedido.setPesoGramas(request.pesoGramas());
-        pedido.setValor(request.valor());
-        pedido.setPrazo(request.prazo());
+        // Em produção o estoque já foi descontado: devolve o que saiu e baixa de novo com os dados novos.
+        boolean emProducao = pedido.getStatus() == OrderStatus.EM_PRODUCAO;
+        if (emProducao) {
+            estornarSeDescontado(pedido);
+        }
+        preencher(pedido, request.clienteId(), request.descricao(), request.material(),
+                request.pesoGramas(), request.valor(), request.prazo(), request.filamentoId());
+        if (emProducao) {
+            baixarSeHouverFilamento(pedido);
+        }
         return orderMapper.toResponse(pedido);
     }
 
@@ -87,8 +92,44 @@ public class OrderService {
             throw new BusinessException("Transição de status inválida: %s → %s."
                     .formatted(pedido.getStatus(), novoStatus));
         }
+        if (pedido.getStatus() == OrderStatus.PENDENTE && novoStatus == OrderStatus.EM_PRODUCAO) {
+            baixarSeHouverFilamento(pedido);
+        } else if (pedido.getStatus() == OrderStatus.EM_PRODUCAO && novoStatus == OrderStatus.CANCELADO) {
+            estornarSeDescontado(pedido);
+        }
         pedido.setStatus(novoStatus);
         return orderMapper.toResponse(pedido);
+    }
+
+    private void preencher(Order pedido, Long clienteId, String descricao, String material,
+                           BigDecimal pesoGramas, BigDecimal valor, LocalDate prazo, Long filamentoId) {
+        pedido.setCliente(obterCliente(clienteId));
+        pedido.setDescricao(descricao.trim());
+        if (filamentoId != null) {
+            Filament filamento = filamentService.obter(filamentoId);
+            pedido.setFilamento(filamento);
+            pedido.setMaterial(filamento.getMaterial());
+        } else {
+            pedido.setFilamento(null);
+            pedido.setMaterial(material.trim().toUpperCase());
+        }
+        pedido.setPesoGramas(pesoGramas);
+        pedido.setValor(valor);
+        pedido.setPrazo(prazo);
+    }
+
+    private void baixarSeHouverFilamento(Order pedido) {
+        if (pedido.getFilamento() != null) {
+            filamentService.baixar(pedido.getFilamento().getId(), pedido.getPesoGramas(), pedido.getId());
+            pedido.setGramasDescontadas(pedido.getPesoGramas());
+        }
+    }
+
+    private void estornarSeDescontado(Order pedido) {
+        if (pedido.getGramasDescontadas() != null && pedido.getFilamento() != null) {
+            filamentService.estornar(pedido.getFilamento().getId(), pedido.getGramasDescontadas(), pedido.getId());
+        }
+        pedido.setGramasDescontadas(null);
     }
 
     @Transactional
