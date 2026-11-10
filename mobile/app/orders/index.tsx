@@ -9,7 +9,7 @@ import { toApiError } from '../../src/api/http';
 import { EmptyState, ErrorState, LoadingState } from '../../src/components/ScreenState';
 import { StatusChip } from '../../src/components/StatusChip';
 import { Screen } from '../../src/components/Screen';
-import { fonts, colors, layout, radius, spacing } from '../../src/theme';
+import { fonts, colors, layout, radius, spacing, statusColors } from '../../src/theme';
 import { formatBRL, isoToBr, todayIso } from '../../src/utils/format';
 
 export default function OrdersList() {
@@ -113,11 +113,23 @@ export default function OrdersList() {
         contentContainerStyle={styles.filters}
       >
         <Chip icon="format-list-bulleted" selected={status === null} onPress={() => setStatus(null)} style={styles.filter}>Todos</Chip>
-        {ORDER_STATUSES.map((s) => (
-          <Chip key={s} icon={STATUS_ICON[s]} selected={status === s} onPress={() => setStatus(status === s ? null : s)} style={styles.filter}>
-            {STATUS_LABEL[s]}
-          </Chip>
-        ))}
+        {ORDER_STATUSES.map((s) => {
+          const c = statusColors[s];
+          const active = status === s;
+          return (
+            <Chip
+              key={s}
+              icon={STATUS_ICON[s]}
+              selected={active}
+              onPress={() => setStatus(active ? null : s)}
+              selectedColor={c.fg}
+              textStyle={{ color: c.fg }}
+              style={[styles.filter, { backgroundColor: c.bg, borderWidth: 1, borderColor: active ? c.fg : c.bg }]}
+            >
+              {STATUS_LABEL[s]}
+            </Chip>
+          );
+        })}
       </ScrollView>
       {body}
     </Screen>

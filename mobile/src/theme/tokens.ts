@@ -7,17 +7,17 @@
  */
 export const colors = {
   /** Tinta: botões principais, marca e texto forte. */
-  primary: '#1b1d22',
+  primary: '#1558c9',
   onPrimary: '#ffffff',
 
   /** Destaque único (≥ 4.5:1 sobre branco): dados em evidência, item ativo, marca. */
-  accent: '#c2410c',
+  accent: '#1558c9',
   accentSoft: '#fdeee6',
 
   background: '#f5f6f8',
   surface: '#ffffff',
   /** Degrau acima do fundo, para itens ativos e campos neutros. */
-  raised: '#eceef2',
+  raised: '#1557c92b',
 
   text: '#16181d',
   textMuted: '#59606c',

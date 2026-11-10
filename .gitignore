@@ -25,3 +25,5 @@ logs/
 # Skills de design instaladas localmente (não fazem parte do app)
 .agents/
 skills-lock.json
+
+.fake

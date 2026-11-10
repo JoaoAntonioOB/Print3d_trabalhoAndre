@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Print3D Mobile</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: cabeçalho + abas fixas; cada aba é uma seção única com cartões e simuladores. */
+:root{
+  --bg:#faf8f6; --surface:#ffffff; --surface2:#f3efeb; --fg:#241f1b; --muted:#6b625b; --line:#e3dcd5;
+  --accent:#d9480f; --accent-soft:#fdeee6; --accent-fg:#ffffff;
+  --ok:#2b8a3e; --ok-soft:#e6f4ea; --warn:#b36b00; --warn-soft:#fff3d6; --bad:#c92a2a; --bad-soft:#fde8e8;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#171412; --surface:#211d1a; --surface2:#2a2521; --fg:#f1ebe5; --muted:#a39990; --line:#3a332e;
+  --accent:#ff8a4c; --accent-soft:#3a251b; --accent-fg:#1a0e07;
+  --ok:#69db7c; --ok-soft:#1c2e21; --warn:#ffc569; --warn-soft:#352a14; --bad:#ff8787; --bad-soft:#3a1d1d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#171412; --surface:#211d1a; --surface2:#2a2521; --fg:#f1ebe5; --muted:#a39990; --line:#3a332e;
+  --accent:#ff8a4c; --accent-soft:#3a251b; --accent-fg:#1a0e07;
+  --ok:#69db7c; --ok-soft:#1c2e21; --warn:#ffc569; --warn-soft:#352a14; --bad:#ff8787; --bad-soft:#3a1d1d; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:16px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 56px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:20;background:var(--bg)}
+.wrap{max-width:980px;margin:0 auto}
+header{padding-block:28px 16px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h1{font-size:clamp(28px,5vw,42px);line-height:1.1;margin:0 0 10px;text-wrap:balance;letter-spacing:-.02em}
+h2{font-size:22px;margin:0 0 12px;text-wrap:balance;letter-spacing:-.01em}
+h3{font-size:16px;margin:0 0 6px}
+p{margin:0 0 12px;max-width:68ch}
+.lead{font-size:18px;color:var(--muted);max-width:60ch}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:15;background:var(--bg);border-bottom:1px solid var(--line);margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px));overflow-x:auto}
+nav .tabs{display:flex;gap:4px;max-width:980px;margin:0 auto}
+nav button{font:inherit;font-size:14px;font-weight:500;white-space:nowrap;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:12px 12px 9px;cursor:pointer}
+nav button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section.pane{padding-top:24px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.card.flat{background:var(--surface2);border-color:transparent}
+.tag{display:inline-block;font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.kv{font-family:var(--mono);font-size:13px;color:var(--muted)}
+code,.mono{font-family:var(--mono);font-size:.88em}
+code{background:var(--surface2);padding:1px 5px;border-radius:4px}
+.btn{font:inherit;font-size:14px;font-weight:600;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 14px;cursor:pointer;min-height:40px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:4px}
+input,select{font:inherit;font-size:15px;width:100%;min-height:42px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+input[type=checkbox]{width:auto;min-height:0}
+.msg{border-radius:8px;padding:10px 12px;font-size:14px;margin-top:10px}
+.msg.ok{background:var(--ok-soft);color:var(--ok)} .msg.warn{background:var(--warn-soft);color:var(--warn)} .msg.bad{background:var(--bad-soft);color:var(--bad)} .msg.info{background:var(--surface2);color:var(--muted)}
+.http{font-family:var(--mono);font-size:13px;font-weight:500}
+.fields{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:12px}
+.fields input[readonly]{background:var(--surface2)}
+/* arquitetura */
+.arch{display:grid;gap:10px;grid-template-columns:1fr 36px 1fr 36px 1fr;align-items:center}
+.node{font:inherit;text-align:left;background:var(--surface);border:2px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;color:var(--fg);min-width:0}
+.node[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.node b{display:block;font-size:15px} .node span{font-size:12px;color:var(--muted)}
+.arrow{text-align:center;color:var(--muted);font-family:var(--mono);font-size:12px}
+.side{display:grid;gap:10px;min-width:0}
+@media (max-width:700px){.arch{grid-template-columns:1fr}.arrow br{display:none}.arrow{padding:2px 0}}
+.flow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0 4px}
+.pill{font-family:var(--mono);font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
+.pill.on{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.pill.off{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.bar{height:12px;border-radius:6px;background:var(--surface2);overflow:hidden;margin:6px 0}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+.log{font-family:var(--mono);font-size:12px;color:var(--muted);margin:8px 0 0;padding:0;list-style:none;max-height:140px;overflow:auto}
+details{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0;margin-bottom:10px}
+summary{cursor:pointer;padding:14px 16px;font-weight:600;display:flex;gap:10px;align-items:center;justify-content:space-between}
+details[open] summary{border-bottom:1px solid var(--line)}
+details .in{padding:14px 16px}
+.chk{font-family:var(--mono);font-size:12px;color:var(--ok)}
+ol.steps{padding-left:0;list-style:none;counter-reset:s;margin:0}
+ol.steps li{counter-increment:s;display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+ol.steps li:last-child{border-bottom:0}
+ol.steps li::before{content:counter(s);flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;display:grid;place-items:center;font-size:13px}
+ol.steps li.done{opacity:.55}
+ol.steps li .t{flex:1;min-width:0}
+.sub{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.sub button{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:6px 14px;cursor:pointer}
+.sub button[aria-selected="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;font-size:14px;min-width:520px;width:100%}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+</style>
+
+<div class="wrap">
+<header>
+  <p class="eyebrow">Trabalho de React Native · apresentação</p>
+  <h1>Print3D Mobile</h1>
+  <p class="lead">Controle de clientes, pedidos e estoque de filamentos para pequenas empresas de impressão 3D. Cada aba abaixo responde uma parte do enunciado, e os simuladores mostram as regras funcionando.</p>
+</header>
+
+<nav aria-label="Seções"><div class="tabs" role="tablist" id="tabs"></div></nav>
+
+<!-- VISÃO GERAL -->
+<section class="pane" id="visao" hidden>
+  <div class="grid">
+    <div class="card"><span class="tag">Problema</span>
+      <h2 style="margin-top:10px">Planilha e WhatsApp não bastam</h2>
+      <p>Pequenas empresas de impressão 3D controlam clientes e pedidos em planilhas e conversas. Pedidos atrasam sem ninguém perceber, o filamento acaba sem aviso e o dono não sabe quanto vendeu no mês.</p></div>
+    <div class="card"><span class="tag">Público</span>
+      <h2 style="margin-top:10px">Donos e operadores</h2>
+      <p>Quem recebe os pedidos, opera as impressoras e precisa decidir o que produzir primeiro. Usa o celular durante o dia, no balcão ou na oficina.</p></div>
+    <div class="card"><span class="tag">Solução</span>
+      <h2 style="margin-top:10px">Um app para tudo</h2>
+      <p>Login seguro, clientes com endereço automático, pedidos com ciclo de status, estoque que desconta sozinho e um painel que mostra a fila e os atrasos.</p></div>
+  </div>
+
+  <h2 style="margin-top:28px">Benefícios esperados</h2>
+  <p class="kv">Clique para ver como cada um é entregue.</p>
+  <div class="row" id="benefits" style="margin-bottom:10px"></div>
+  <div class="msg info" id="benefitText" aria-live="polite">Escolha um benefício.</div>
+
+  <h2 style="margin-top:28px">Em números</h2>
+  <div class="grid">
+    <div class="card flat"><div style="font-size:30px;font-weight:700">2</div><div class="kv">APIs externas: ViaCEP e BrasilAPI</div></div>
+    <div class="card flat"><div style="font-size:30px;font-weight:700">13</div><div class="kv">indicadores e painéis no dashboard</div></div>
+    <div class="card flat"><div style="font-size:30px;font-weight:700">60</div><div class="kv">testes automatizados</div></div>
+    <div class="card flat"><div style="font-size:30px;font-weight:700">0</div><div class="kv">acessos do app direto ao banco</div></div>
+  </div>
+</section>
+
+<!-- REQUISITOS -->
+<section class="pane" id="requisitos" hidden>
+  <h2>O que o professor pediu e como atendemos</h2>
+  <p class="kv">Abra cada item. Marque o que já explicou para acompanhar a apresentação: <span id="reqCount" class="mono"></span></p>
+  <div id="reqList"></div>
+</section>
+
+<!-- ARQUITETURA -->
+<section class="pane" id="arquitetura" hidden>
+  <h2>Arquitetura com BFF</h2>
+  <p>O app só conversa com a nossa API. A API aplica as regras, grava no banco e consulta os serviços externos. Clique em cada bloco.</p>
+  <div class="arch" role="group" aria-label="Diagrama">
+    <button class="node" data-n="app" aria-pressed="true"><b>App mobile</b><span>Expo · React Native</span></button>
+    <div class="arrow">HTTPS<br>JWT</div>
+    <button class="node" data-n="bff" aria-pressed="false"><b>API BFF</b><span>Spring Boot 3.5 · Java 21</span></button>
+    <div class="arrow">SQL<br>HTTP</div>
+    <div class="side">
+      <button class="node" data-n="db" aria-pressed="false"><b>PostgreSQL 16</b><span>Flyway · numeric(12,2)</span></button>
+      <button class="node" data-n="cep" aria-pressed="false"><b>ViaCEP</b><span>endereço pelo CEP</span></button>
+      <button class="node" data-n="cnpj" aria-pressed="false"><b>BrasilAPI</b><span>dados pelo CNPJ</span></button>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px" id="nodeInfo" aria-live="polite"></div>
+
+  <h2 style="margin-top:28px">Caminho de uma requisição</h2>
+  <p class="kv">Escolha o que o usuário faz e veja por onde passa.</p>
+  <div class="row" id="pathBtns" style="margin-bottom:8px"></div>
+  <div class="flow" id="pathFlow"></div>
+  <div class="msg info" id="pathText"></div>
+</section>
+
+<!-- DEMO -->
+<section class="pane" id="demo" hidden>
+  <h2>Simuladores</h2>
+  <p class="kv">Reproduzem as regras reais da API. Não fazem chamadas de rede.</p>
+  <div class="sub" role="tablist" id="subtabs"></div>
+
+  <div id="d-login" hidden>
+    <div class="grid">
+      <div class="card">
+        <h3>Login</h3>
+        <p class="kv">Usuário de demonstração: demo@print3d.com / admin123</p>
+        <form id="loginForm" novalidate>
+          <label for="em">E-mail</label><input id="em" value="demo@print3d.com" autocomplete="off">
+          <label for="pw" style="margin-top:10px">Senha</label><input id="pw" type="password" value="senha-errada" autocomplete="off">
+          <div class="row" style="margin-top:12px"><button class="btn primary" type="submit">Entrar</button><button class="btn" type="button" id="logout">Sair</button></div>
+        </form>
+        <div id="loginMsg" aria-live="polite"></div>
+      </div>
+      <div class="card">
+        <h3>Rota protegida</h3>
+        <p>Estado do token: <b id="tokState">sem token</b></p>
+        <div class="row"><button class="btn" id="callDash">GET /api/dashboard</button></div>
+        <div id="dashMsg" aria-live="polite"></div>
+        <p class="kv" style="margin-top:12px">Com 401, o app apaga o token do <code>expo-secure-store</code> e volta ao login.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="d-cep" hidden>
+    <div class="grid">
+      <div class="card">
+        <h3>CEP (ViaCEP)</h3>
+        <label for="cep">CEP</label><input id="cep" inputmode="numeric" placeholder="00000-000" maxlength="9">
+        <div class="row" style="margin-top:10px">
+          <button class="btn" data-cep="01001-000">Válido</button>
+          <button class="btn" data-cep="99999-999">Inexistente</button>
+          <button class="btn" data-cep="123">Malformado</button>
+          <button class="btn" data-cep="offline">API fora do ar</button>
+        </div>
+        <div id="cepMsg" aria-live="polite"></div>
+      </div>
+      <div class="card">
+        <h3>CNPJ (BrasilAPI)</h3>
+        <label for="cnpj">CNPJ</label><input id="cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" maxlength="18">
+        <div class="row" style="margin-top:10px">
+          <button class="btn" data-cnpj="06.990.590/0001-23">Válido</button>
+          <button class="btn" data-cnpj="00.000.000/0001-92">Dígito errado</button>
+          <button class="btn" data-cnpj="11.222.333/0001-81">Inexistente</button>
+          <button class="btn" data-cnpj="offline">API fora do ar</button>
+        </div>
+        <div id="cnpjMsg" aria-live="polite"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h3>Formulário de cliente (preenchido pela API)</h3>
+      <div class="fields">
+        <div><label for="f-nome">Nome</label><input id="f-nome" placeholder="digite ou deixe a API preencher"></div>
+        <div><label for="f-log">Logradouro</label><input id="f-log"></div>
+        <div><label for="f-bai">Bairro</label><input id="f-bai"></div>
+        <div><label for="f-cid">Cidade</label><input id="f-cid"></div>
+        <div><label for="f-uf">UF</label><input id="f-uf" maxlength="2"></div>
+        <div><label for="f-tel">Telefone</label><input id="f-tel"></div>
+      </div>
+      <p class="kv" style="margin-top:10px">Falha externa nunca bloqueia o cadastro: os campos continuam editáveis. Dados de exemplo.</p>
+    </div>
+  </div>
+
+  <div id="d-pedido" hidden>
+    <div class="grid">
+      <div class="card">
+        <h3>Pedido</h3>
+        <label for="peso">Peso do pedido</label>
+        <select id="peso"><option value="120.5">120,5 g</option><option value="1500">1.500 g (maior que o saldo)</option></select>
+        <label style="margin-top:10px;display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="usaFil" checked> Pedido usa um filamento</label>
+        <div class="flow" id="stFlow"></div>
+        <div class="row" id="stBtns" style="margin-top:8px"></div>
+        <div class="row" style="margin-top:8px"><button class="btn" id="tryEdit">Editar pedido</button><button class="btn" id="tryDelCli">Excluir o cliente</button><button class="btn" id="resetPed">Reiniciar</button></div>
+        <div id="pedMsg" aria-live="polite"></div>
+      </div>
+      <div class="card">
+        <h3>Estoque: PLA branco</h3>
+        <div style="font-size:28px;font-weight:700" id="saldo"></div>
+        <div class="bar"><i id="saldoBar"></i></div>
+        <div class="kv" id="saldoBaixo"></div>
+        <h3 style="margin-top:14px">Histórico</h3>
+        <ul class="log" id="hist"></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROTEIRO -->
+<section class="pane" id="roteiro" hidden>
+  <h2>Roteiro da demonstração</h2>
+  <p class="kv">Cerca de 5 minutos. Marque cada passo ao mostrar no celular.</p>
+  <ol class="steps" id="steps"></ol>
+  <h2 style="margin-top:28px">Regras de negócio na API</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Área</th><th>Regra</th><th>Resposta</th></tr></thead>
+    <tbody>
+      <tr><td>Cliente</td><td>Nome obrigatório; CPF/CNPJ único</td><td class="mono">400 / 409</td></tr>
+      <tr><td>Cliente</td><td>Com pedidos, não pode ser excluído</td><td class="mono">409</td></tr>
+      <tr><td>Pedido</td><td>Valor e peso maiores que zero; prazo não pode estar no passado</td><td class="mono">400</td></tr>
+      <tr><td>Pedido</td><td>PENDENTE → EM_PRODUCAO → CONCLUIDO → ENTREGUE; CANCELADO a partir de PENDENTE ou EM_PRODUCAO</td><td class="mono">400</td></tr>
+      <tr><td>Pedido</td><td>Só PENDENTE e EM_PRODUCAO são editáveis</td><td class="mono">400</td></tr>
+      <tr><td>Estoque</td><td>Desconta ao iniciar produção, estorna ao cancelar; saldo nunca negativo</td><td class="mono">400</td></tr>
+    </tbody>
+  </table></div>
+  <h2 style="margin-top:28px">Segurança e limites assumidos</h2>
+  <div class="grid">
+    <div class="card"><h3>Feito</h3><p>Senhas com BCrypt, JWT assinado, todas as rotas exigem token (menos login e health), token no <code>expo-secure-store</code>, sem dados de clientes nos logs.</p></div>
+    <div class="card"><h3>Fora do escopo</h3><p>Sem limite de tentativas de login, sem renovação de token (validade de 24 h) e HTTP na rede local durante a demo. Em produção, usar HTTPS.</p></div>
+  </div>
+</section>
+</div>
+
+<script>
+(function(){
+  var $=function(s,r){return (r||document).querySelector(s)}, $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+  function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstChild}
+  function msg(target,cls,html){target.innerHTML='<div class="msg '+cls+'">'+html+'</div>'}
+  function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+
+  /* abas principais */
+  var TABS=[['visao','Visão geral'],['requisitos','Requisitos'],['arquitetura','Arquitetura'],['demo','Simuladores'],['roteiro','Roteiro']];
+  var tabsEl=$('#tabs');
+  TABS.forEach(function(t){var b=document.createElement('button');b.setAttribute('role','tab');b.dataset.t=t[0];b.textContent=t[1];b.onclick=function(){go(t[0])};tabsEl.appendChild(b)});
+  function go(id){
+    if(!TABS.some(function(t){return t[0]===id}))id='visao';
+    $$('section.pane').forEach(function(s){s.hidden=s.id!==id});
+    $$('#tabs button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.t===id)});
+    if(location.hash!=='#'+id)history.replaceState(null,'','#'+id);
+    window.scrollTo(0,0);
+  }
+  window.addEventListener('hashchange',function(){go(location.hash.slice(1))});
+
+  /* benefícios */
+  var BEN=[
+    ['Menos atrasos','O painel lista pedidos atrasados e os que vencem na semana. O dono vê o problema antes do cliente reclamar.'],
+    ['Visão do faturamento','Faturamento do mês, ticket médio, valor a receber e vendas dos últimos 6 meses num só lugar.'],
+    ['Estoque sem planilha','O saldo em gramas desce sozinho quando o pedido entra em produção e volta se for cancelado. Alerta de estoque baixo no painel.'],
+    ['Cadastro mais rápido','O CEP preenche o endereço e o CNPJ preenche os dados da empresa. Menos digitação, menos erro.'],
+    ['Dados organizados','Clientes e pedidos ficam no banco, com busca, filtro por status e histórico, em vez de espalhados no WhatsApp.']];
+  var bw=$('#benefits');
+  BEN.forEach(function(b,i){var x=document.createElement('button');x.className='btn';x.textContent=b[0];x.onclick=function(){$$('#benefits .btn').forEach(function(y){y.classList.remove('primary')});x.classList.add('primary');$('#benefitText').className='msg ok';$('#benefitText').textContent=b[1]};bw.appendChild(x)});
+
+  /* requisitos */
+  var REQ=[
+    ['Login e autenticação, acesso só para autenticados','Login JWT na API. As rotas do app são protegidas, o 401 derruba a sessão e o token fica no armazenamento seguro do aparelho.','app/login.tsx · AuthContext · security/ (API)','Simuladores › Login'],
+    ['Dashboard com indicadores','13 indicadores e painéis: pedidos em aberto, valor a receber, faturamento, ticket médio, gráfico de vendas de 6 meses, fila por status, vencimentos da semana, atrasados e maiores clientes. Uma única chamada: GET /api/dashboard.','app/index.tsx · GET /api/dashboard',''],
+    ['Cadastro, consulta, edição e exclusão','CRUD de Clientes, Pedidos e Filamentos, com busca, filtro por status e paginação.','app/clients/* · app/orders/* · app/filaments/*','Simuladores › Pedido e estoque'],
+    ['Integração com APIs externas','ViaCEP preenche o endereço e BrasilAPI preenche os dados da empresa. O app chama a nossa API, que consulta os serviços com timeout curto e cache.','cep/* · cnpj/* (API) · clients/form.tsx','Simuladores › CEP e CNPJ'],
+    ['API BFF com regras e persistência','Spring Boot + PostgreSQL com migrações Flyway. As regras de negócio ficam nos services. O app só fala HTTP com a API.','backend/','Arquitetura'],
+    ['Dados salvos e disponíveis depois','Tudo é gravado no PostgreSQL pela API e consultado de novo a qualquer momento. O app não tem conexão com o banco.','backend/src/main/resources/db/migration',''],
+    ['Validação, erros tratados, mensagens claras','Zod no app e Bean Validation na API. Erro padrão { code, message, fieldErrors[] }: o app mostra a mensagem e marca o campo. Há telas de carregando, vazio e erro.','todas as telas','Simuladores › qualquer erro']];
+  var rl=$('#reqList'), seen=JSON.parse(store('p3d-req')||'[]');
+  function reqCount(){$('#reqCount').textContent=seen.length+' de '+REQ.length}
+  REQ.forEach(function(r,i){
+    var d=document.createElement('details');
+    d.innerHTML='<summary><span>'+r[0]+'</span><span class="chk" data-c="'+i+'"></span></summary><div class="in"><p>'+r[1]+'</p><p class="kv">Onde ver: '+r[2]+(r[3]?' · Demo: '+r[3]:'')+'</p><label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" data-i="'+i+'"> Já expliquei este item</label></div>';
+    rl.appendChild(d);
+  });
+  $$('#reqList input').forEach(function(c){var i=+c.dataset.i;c.checked=seen.indexOf(i)>-1;mark(i,c.checked);c.onchange=function(){seen=seen.filter(function(x){return x!==i});if(c.checked)seen.push(i);store('p3d-req',JSON.stringify(seen));mark(i,c.checked);reqCount()}});
+  function mark(i,on){$('[data-c="'+i+'"]').textContent=on?'explicado':''}
+  reqCount();
+
+  /* arquitetura */
+  var NODES={
+    app:['App mobile (Expo / React Native)','Telas, formulários (React Hook Form + Zod), navegação protegida e cache de consultas (TanStack Query). Guarda o token no expo-secure-store. Não conhece o endereço do banco nem das APIs externas.'],
+    bff:['API BFF (Spring Boot)','Valida o token JWT, aplica as regras de negócio (status do pedido, estoque, exclusão de cliente), grava no banco e chama ViaCEP e BrasilAPI. Entrega ao app só o que a tela precisa, como o GET /api/dashboard.'],
+    db:['PostgreSQL 16','Guarda usuários, clientes, pedidos e filamentos. O esquema é criado só por migrações Flyway. Valores monetários em numeric(12,2). Só a API acessa.'],
+    cep:['ViaCEP','O app chama GET /api/cep/{cep}. A API valida os 8 dígitos, consulta viacep.com.br com timeout de 3 s, guarda em cache e devolve só CEP, logradouro, bairro, cidade e estado.'],
+    cnpj:['BrasilAPI','O app chama GET /api/cnpj/{cnpj}. A API confere formato e dígitos verificadores antes de consultar brasilapi.com.br (timeout de 4 s, com cache). O app preenche só os campos ainda vazios.']};
+  function node(k){$$('.node').forEach(function(n){n.setAttribute('aria-pressed',n.dataset.n===k)});$('#nodeInfo').innerHTML='<h3>'+NODES[k][0]+'</h3><p style="margin:0">'+NODES[k][1]+'</p>'}
+  $$('.node').forEach(function(n){n.onclick=function(){node(n.dataset.n)}});node('app');
+
+  var PATHS={
+    'Entrar':[['App','POST /auth/login'],['API','confere senha (BCrypt)'],['Banco','busca usuário'],['API','assina o JWT'],['App','guarda o token']],
+    'Digitar CEP':[['App','GET /api/cep/…'],['API','valida + cache'],['ViaCEP','consulta'],['API','filtra campos'],['App','preenche endereço']],
+    'Iniciar produção':[['App','PATCH status'],['API','valida transição'],['API','confere saldo'],['Banco','grava status e saída'],['App','atualiza tela']],
+    'Abrir painel':[['App','GET /api/dashboard'],['API','confere token'],['Banco','agrega dados'],['API','monta o resumo'],['App','desenha gráficos']]};
+  var PTXT={
+    'Entrar':'A senha nunca é guardada em texto puro. O app recebe o token e o usuário, nada mais.',
+    'Digitar CEP':'Se a ViaCEP falhar, a API responde 503 e o app deixa o usuário preencher à mão.',
+    'Iniciar produção':'Status e estoque mudam na mesma operação. Se o saldo não bastar, nada é alterado e o app mostra "Estoque insuficiente".',
+    'Abrir painel':'Uma chamada traz tudo que a tela inicial precisa, o que poupa rede no celular.'};
+  var pb=$('#pathBtns');
+  Object.keys(PATHS).forEach(function(k){var b=document.createElement('button');b.className='btn';b.textContent=k;b.onclick=function(){path(k)};pb.appendChild(b)});
+  var pathTimer=null;
+  function path(k){
+    $$('#pathBtns .btn').forEach(function(b){b.classList.toggle('primary',b.textContent===k)});
+    var f=$('#pathFlow');f.innerHTML='';$('#pathText').textContent=PTXT[k];
+    PATHS[k].forEach(function(s,i){var p=document.createElement('span');p.className='pill';p.textContent=s[0]+' · '+s[1];f.appendChild(p);if(i<PATHS[k].length-1){var a=document.createElement('span');a.className='kv';a.textContent='→';f.appendChild(a)}});
+    clearInterval(pathTimer);var i=0,ps=$$('.pill',f);
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){ps.forEach(function(p){p.classList.add('on')});return}
+    pathTimer=setInterval(function(){ps.forEach(function(p,j){p.classList.toggle('on',j===i)});i++;if(i>ps.length){clearInterval(pathTimer);ps.forEach(function(p){p.classList.add('on')})}},650);
+  }
+  path('Entrar');
+
+  /* simuladores */
+  var SUBS=[['d-login','Login e token'],['d-cep','CEP e CNPJ'],['d-pedido','Pedido e estoque']], sw=$('#subtabs');
+  SUBS.forEach(function(s){var b=document.createElement('button');b.dataset.s=s[0];b.textContent=s[1];b.setAttribute('role','tab');b.onclick=function(){sub(s[0])};sw.appendChild(b)});
+  function sub(id){SUBS.forEach(function(s){$('#'+s[0]).hidden=s[0]!==id});$$('#subtabs button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.s===id)})}
+  sub('d-login');
+
+  var token=null;
+  function tokUi(){$('#tokState').textContent=token?'token salvo (expira em 24 h)':'sem token'}
+  $('#loginForm').onsubmit=function(e){e.preventDefault();
+    var em=$('#em').value.trim(),pw=$('#pw').value;
+    if(!em||!pw){msg($('#loginMsg'),'bad','Preencha e-mail e senha. O campo vazio fica marcado.');return}
+    if(em==='demo@print3d.com'&&pw==='admin123'){token='eyJhbGciOiJIUzI1NiJ9.exemplo.assinatura';tokUi();msg($('#loginMsg'),'ok','<span class="http">200</span> Login feito. Token guardado no armazenamento seguro. As telas protegidas foram liberadas.')}
+    else{token=null;tokUi();msg($('#loginMsg'),'bad','<span class="http">401</span> E-mail ou senha inválidos.')}};
+  $('#logout').onclick=function(){token=null;tokUi();msg($('#loginMsg'),'info','Sessão encerrada. O token foi apagado e o app volta ao login.');$('#dashMsg').innerHTML=''};
+  $('#callDash').onclick=function(){
+    if(token)msg($('#dashMsg'),'ok','<span class="http">200</span> Painel carregado: pedidos em aberto, faturamento, fila de produção e atrasados.');
+    else msg($('#dashMsg'),'bad','<span class="http">401</span> Sem token a rota não abre. O app limpa a sessão e mostra a tela de login.')};
+  tokUi();
+
+  function digits(s){return s.replace(/\D/g,'')}
+  var cepIn=$('#cep');
+  cepIn.oninput=function(){var d=digits(cepIn.value).slice(0,8);cepIn.value=d.length>5?d.slice(0,5)+'-'+d.slice(5):d;if(d.length===8)cepLookup(d)};
+  $$('[data-cep]').forEach(function(b){b.onclick=function(){var v=b.dataset.cep;if(v==='offline'){cepIn.value='01001-000';cepLookup('offline');return}cepIn.value=v;var d=digits(v);if(d.length===8)cepLookup(d);else cepLookup(d)}});
+  function cepLookup(d){
+    var m=$('#cepMsg');
+    if(d==='offline'){msg(m,'warn','<span class="http">503</span> Serviço de CEP indisponível, preencha manualmente.');return}
+    if(d.length!==8){msg(m,'bad','<span class="http">400</span> CEP inválido: informe 8 dígitos.');return}
+    if(d==='01001000'){$('#f-log').value='Praça da Sé';$('#f-bai').value='Sé';$('#f-cid').value='São Paulo';$('#f-uf').value='SP';msg(m,'ok','<span class="http">200</span> Endereço preenchido. O foco vai para "Número".');return}
+    msg(m,'warn','<span class="http">404</span> CEP não encontrado, preencha manualmente. O cadastro continua possível.')}
+  function cnpjOk(c){
+    if(c.length!==14||/^(\d)\1+$/.test(c))return false;
+    function dv(n){var w=n===12?[5,4,3,2,9,8,7,6,5,4,3,2]:[6,5,4,3,2,9,8,7,6,5,4,3,2],s=0;for(var i=0;i<n;i++)s+=+c[i]*w[i];var r=s%11;return r<2?0:11-r}
+    return dv(12)==+c[12]&&dv(13)==+c[13]}
+  var cnIn=$('#cnpj');
+  cnIn.oninput=function(){var d=digits(cnIn.value).slice(0,14);cnIn.value=d.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2');if(d.length===14)cnpjLookup(d)};
+  $$('[data-cnpj]').forEach(function(b){b.onclick=function(){var v=b.dataset.cnpj;if(v==='offline'){cnIn.value='06.990.590/0001-23';cnpjLookup('offline');return}cnIn.value=v;cnpjLookup(digits(v))}});
+  function cnpjLookup(d){
+    var m=$('#cnpjMsg');
+    if(d==='offline'){msg(m,'warn','<span class="http">503</span> Serviço de consulta de CNPJ indisponível, preencha manualmente.');return}
+    if(!cnpjOk(d)){msg(m,'bad','<span class="http">400</span> CNPJ inválido: confira os 14 dígitos. A BrasilAPI nem é consultada.');return}
+    if(d==='06990590000123'){$('#f-nome').value='Empresa Exemplo Ltda';$('#f-tel').value='(11) 5555-0100';$('#f-log').value='Avenida Exemplo';$('#f-bai').value='Centro';$('#f-cid').value='São Paulo';$('#f-uf').value='SP';msg(m,'ok','<span class="http">200</span> Dados preenchidos (exemplo). Confira antes de salvar.');return}
+    msg(m,'warn','<span class="http">404</span> CNPJ não encontrado, preencha manualmente.')}
+
+  /* pedido + estoque */
+  var ST=['PENDENTE','EM_PRODUCAO','CONCLUIDO','ENTREGUE'], SALDO0=1000, LIM=200;
+  var st,saldo,hist;
+  function reset(){st='PENDENTE';saldo=SALDO0;hist=[];$('#pedMsg').innerHTML='';drawPed()}
+  function peso(){return +$('#peso').value}
+  function usa(){return $('#usaFil').checked}
+  function fmt(n){return n.toLocaleString('pt-BR',{maximumFractionDigits:1})+' g'}
+  function drawPed(){
+    var f=$('#stFlow');f.innerHTML='';
+    ST.forEach(function(s){var p=document.createElement('span');p.className='pill'+(s===st?' on':'');p.textContent=s;f.appendChild(p)});
+    if(st==='CANCELADO'){var c=document.createElement('span');c.className='pill off';c.textContent='CANCELADO';f.appendChild(c)}
+    var b=$('#stBtns');b.innerHTML='';
+    function add(t,fn,p){var x=document.createElement('button');x.className='btn'+(p?' primary':'');x.textContent=t;x.onclick=fn;b.appendChild(x)}
+    if(st==='PENDENTE'){add('Iniciar produção',function(){mv('EM_PRODUCAO')},1);add('Cancelar',function(){mv('CANCELADO')})}
+    else if(st==='EM_PRODUCAO'){add('Concluir',function(){mv('CONCLUIDO')},1);add('Cancelar',function(){mv('CANCELADO')})}
+    else if(st==='CONCLUIDO'){add('Entregar',function(){mv('ENTREGUE')},1)}
+    else{var s=document.createElement('span');s.className='kv';s.textContent='Fim do ciclo: nenhuma transição disponível.';b.appendChild(s)}
+    $('#saldo').textContent=fmt(saldo);
+    $('#saldoBar').style.width=Math.max(0,saldo/SALDO0*100)+'%';
+    $('#saldoBaixo').textContent=saldo<LIM?'Estoque baixo: o alerta aparece no painel.':'Alerta abaixo de '+fmt(LIM);
+    $('#hist').innerHTML=hist.length?hist.map(function(h){return '<li>'+h+'</li>'}).join(''):'<li>sem movimentações</li>';
+  }
+  function mv(to){
+    var m=$('#pedMsg');
+    if(st==='PENDENTE'&&to==='EM_PRODUCAO'&&usa()){
+      if(peso()>saldo){msg(m,'bad','<span class="http">400</span> Estoque insuficiente: o pedido pede '+fmt(peso())+' e o saldo é '+fmt(saldo)+'. Nada foi alterado.');return}
+      saldo-=peso();hist.unshift('saída  −'+fmt(peso())+'  (iniciou produção)');
+      msg(m,'ok','Produção iniciada. O saldo desceu '+fmt(peso())+' sozinho.')}
+    else if(st==='EM_PRODUCAO'&&to==='CANCELADO'&&usa()){
+      saldo+=peso();hist.unshift('estorno +'+fmt(peso())+'  (cancelou)');
+      msg(m,'ok','Pedido cancelado. O saldo voltou '+fmt(peso())+'.')}
+    else if(!usa()&&to!=='CANCELADO'&&st==='PENDENTE'){msg(m,'info','Pedido sem filamento: o estoque não é mexido.')}
+    else msg(m,'info','Status alterado para '+to+'.');
+    st=to;drawPed()}
+  $('#tryEdit').onclick=function(){
+    if(st==='PENDENTE'||st==='EM_PRODUCAO')msg($('#pedMsg'),'ok','Edição permitida em '+st+'.');
+    else msg($('#pedMsg'),'bad','<span class="http">400</span> Pedido '+st+' não pode ser alterado.')};
+  $('#tryDelCli').onclick=function(){msg($('#pedMsg'),'bad','<span class="http">409</span> Não é possível excluir o cliente: ele possui pedidos.')};
+  $('#resetPed').onclick=reset;$('#peso').onchange=function(){$('#pedMsg').innerHTML=''};
+  reset();
+
+  /* roteiro */
+  var STEPS=[
+    ['Login','Mostre a senha errada ("E-mail ou senha inválidos.") e depois entre com o usuário demo.'],
+    ['Painel','Pedidos em aberto, valor a receber, gráfico de 6 meses, fila, vencimentos e atrasados. Puxe para atualizar.'],
+    ['Clientes','Busque por "Studio". Novo cliente, CEP 01001-000: o endereço aparece sozinho.'],
+    ['CNPJ','Em outro cliente, CNPJ 06.990.590/0001-23. Depois 00.000.000/0001-92 para ver a mensagem de dígito inválido.'],
+    ['Erro tratado','CEP 99999-999: mensagem amigável e o cadastro segue. Salvar sem nome: campo marcado.'],
+    ['Pedido','Material PLA, peso 120,5, valor 45,90, prazo futuro. Prazo no passado dá erro no campo.'],
+    ['Status','Iniciar produção, Concluído, Entregue. Mostre que cancelar pede confirmação.'],
+    ['Estoque','Veja o saldo cair ao iniciar produção e voltar ao cancelar. Pedido maior que o saldo: "Estoque insuficiente".'],
+    ['Regra de negócio','Excluir cliente com pedidos: "Não é possível excluir o cliente".'],
+    ['Fechamento','Volte ao painel: números e gráfico mudaram. Sair leva ao login e, sem token, as rotas não abrem.']];
+  var so=$('#steps'), done=JSON.parse(store('p3d-steps')||'[]');
+  STEPS.forEach(function(s,i){var li=document.createElement('li');li.className=done.indexOf(i)>-1?'done':'';
+    li.innerHTML='<div class="t"><b>'+s[0]+'</b><div style="color:var(--muted);font-size:14px">'+s[1]+'</div></div><input type="checkbox" aria-label="Passo '+(i+1)+' feito" '+(done.indexOf(i)>-1?'checked':'')+'>';
+    li.querySelector('input').onchange=function(e){li.classList.toggle('done',e.target.checked);done=done.filter(function(x){return x!==i});if(e.target.checked)done.push(i);store('p3d-steps',JSON.stringify(done))};
+    so.appendChild(li)});
+
+  go(location.hash.slice(1)||'visao');
+})();
+</script>
+
+</body></html>
